@@ -48,7 +48,13 @@ public class ElevatorCarEntity extends Entity {
     private static final double CREEP_SPEED = 0.02;
     private static final int DWELL_TICKS = 40;
     /** How long the cabin doors take to open or close. */
-    public static final int DOOR_TICKS = 10;
+    public static final int DOOR_TICKS = 16;
+    /**
+     * Clients see the car and its doors a few ticks behind the server. The car waits this long
+     * after its doors shut before leaving, and after stopping before opening them, so that on
+     * screen the doors are never moving while the car is.
+     */
+    private static final int DOOR_SETTLE_TICKS = 4;
 
     private static final EntityDataAccessor<Integer> DATA_SIZE =
             SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.INT);
@@ -68,8 +74,13 @@ public class ElevatorCarEntity extends Entity {
     /** 1 travelling up, -1 down, 0 idle. Kept through stops so the car finishes its sweep. */
     private int direction;
     private int announcedFloor = Integer.MIN_VALUE;
-    /** Server: how far open the doors are, 0 to DOOR_TICKS. The car only moves once they are shut. */
+    /**
+     * Server: how far open the doors are, 0 to DOOR_TICKS. Once shut it keeps counting down to
+     * -DOOR_SETTLE_TICKS, and only then may the car leave.
+     */
     private int doorTicks = DOOR_TICKS;
+    /** Server: ticks until the doors open after the car has stopped. */
+    private int doorOpenDelay;
     /** Client: door opening for drawing, 0 shut to 1 open. */
     private float doorOpen = 1.0F;
     private float oDoorOpen = 1.0F;
@@ -354,7 +365,12 @@ public class ElevatorCarEntity extends Entity {
             this.targetY = Double.NaN;
         } else {
             boolean doors = this.getStyle().hasDoors();
-            this.doorTicks = this.areDoorsOpen() ? Math.min(DOOR_TICKS, this.doorTicks + 1) : Math.max(0, this.doorTicks - 1);
+            if (this.doorOpenDelay > 0 && --this.doorOpenDelay == 0) {
+                this.setDoorsOpen(true);
+            }
+            this.doorTicks = this.areDoorsOpen()
+                    ? Math.min(DOOR_TICKS, Math.max(this.doorTicks, 0) + 1)
+                    : Math.max(-DOOR_SETTLE_TICKS, this.doorTicks - 1);
             if (Double.isNaN(this.targetY)) {
                 this.velocity = 0.0;
                 if (this.dwell > 0) {
@@ -366,8 +382,8 @@ public class ElevatorCarEntity extends Entity {
                     } else {
                         OptionalInt next = this.chooseNext(motor, oldY);
                         if (next.isPresent()) {
-                            if (doors && this.doorTicks > 0) {
-                                // Shut the doors first; the car leaves once they are closed.
+                            if (doors && this.doorTicks > -DOOR_SETTLE_TICKS) {
+                                // Shut the doors first; the car leaves once they have closed and settled.
                                 this.setDoorsOpen(false);
                             } else {
                                 this.beginMove(next.getAsInt());
@@ -479,16 +495,25 @@ public class ElevatorCarEntity extends Entity {
     }
 
     private void arrive(MotorBlockEntity motor, int floor) {
+        boolean travelled = !Double.isNaN(this.targetY);
+        boolean doors = this.getStyle().hasDoors();
         this.targetY = Double.NaN;
         this.velocity = 0.0;
-        this.dwell = DWELL_TICKS;
+        // With doors, the wait starts once they are open, not while they are still opening.
+        this.dwell = DWELL_TICKS + (doors ? DOOR_TICKS + DOOR_SETTLE_TICKS : 0);
         this.announcedFloor = floor;
         motor.clearRequest(floor);
         int number = motor.floorNumber(floor);
         if (number > 0) {
             this.tellRiders(Component.translatable("hoistway.car.floor", number));
         }
-        this.setDoorsOpen(true);
+        if (doors && travelled && !this.areDoorsOpen()) {
+            // Just pulled in: let the car come to rest on screen before the doors start to open.
+            this.doorOpenDelay = DOOR_SETTLE_TICKS;
+        } else {
+            // Called while already parked here: open, or reopen from wherever the doors have got to.
+            this.setDoorsOpen(true);
+        }
         this.level().playSound(null, this.getX(), floor + 1.0, this.getZ(),
                 Hoistway.CAR_CHIME.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
     }

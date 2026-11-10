@@ -18,6 +18,7 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.InventoryMenu;
 
 /**
@@ -83,20 +84,43 @@ public class CarRenderer extends EntityRenderer<ElevatorCarEntity> {
         draw(minecraft, cabin(style, large), pose, buffers, light);
 
         if (style.hasDoors()) {
-            // Each leaf slides sideways behind the front wall; the small car's leaves tuck into the shaft wall.
-            float slide = (large ? 11.0F : 5.0F) / 16.0F * car.getDoorOpen(partialTick);
-            pose.pushPose();
-            pose.translate(-slide, 0.0F, 0.0F);
-            draw(minecraft, door(style, large, true), pose, buffers, light);
-            pose.popPose();
-            pose.pushPose();
-            pose.translate(slide, 0.0F, 0.0F);
-            draw(minecraft, door(style, large, false), pose, buffers, light);
-            pose.popPose();
+            // Ease in and out, so the leaves start and stop gently instead of at full speed.
+            float open = car.getDoorOpen(partialTick);
+            open = open * open * (3.0F - 2.0F * open);
+            drawLeaf(minecraft, door(style, large, true), large, true, open, pose, buffers, light);
+            drawLeaf(minecraft, door(style, large, false), large, false, open, pose, buffers, light);
         }
         pose.popPose();
 
         super.render(car, yaw, partialTick, pose, buffers, light);
+    }
+
+    /**
+     * Draws one door leaf. Shut, it covers its half of the doorway. Open, it sits wholly behind the
+     * front wall beside the doorway: there is less room there than the leaf is wide (much less on
+     * the small car), so the leaf narrows as it goes, the way a telescoping door's panels stack,
+     * rather than poking out through the side of the cabin.
+     */
+    private static void drawLeaf(Minecraft minecraft, ModelResourceLocation model, boolean large, boolean west, float open,
+            PoseStack pose, MultiBufferSource buffers, int light) {
+        // In pixels across the front, measured from the cabin's centre line: the leaf's inner
+        // (meeting) and outer edges when shut, and the same two edges when fully open.
+        float shutInner = 0.0F;
+        float shutOuter = large ? 12.0F : 5.0F;
+        float openInner = shutOuter;
+        float openOuter = large ? 23.0F : 7.0F;
+        float inner = Mth.lerp(open, shutInner, openInner);
+        float outer = Mth.lerp(open, shutOuter, openOuter);
+        float scale = (outer - inner) / (shutOuter - shutInner);
+        float side = west ? -1.0F : 1.0F;
+
+        pose.pushPose();
+        // The model has the leaf shut, its meeting edge on the centre line (x = 8 pixels).
+        pose.translate(0.5F + side * inner / 16.0F, 0.0F, 0.0F);
+        pose.scale(scale, 1.0F, 1.0F);
+        pose.translate(-0.5F, 0.0F, 0.0F);
+        draw(minecraft, model, pose, buffers, light);
+        pose.popPose();
     }
 
     private static void draw(Minecraft minecraft, ModelResourceLocation location, PoseStack pose, MultiBufferSource buffers, int light) {
