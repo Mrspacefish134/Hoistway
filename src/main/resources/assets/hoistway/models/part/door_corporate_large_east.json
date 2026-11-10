@@ -1,0 +1,68 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "door": "hoistway:block/car_door_corporate",
+    "particle": "hoistway:block/car_door_corporate"
+  },
+  "elements": [
+    {
+      "from": [
+        8,
+        -13,
+        30
+      ],
+      "to": [
+        20,
+        19,
+        31
+      ],
+      "faces": {
+        "north": {
+          "texture": "#door",
+          "uv": [
+            12,
+            0,
+            0,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#door",
+          "uv": [
+            0,
+            0,
+            12,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#door",
+          "uv": [
+            0,
+            0,
+            1,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#door",
+          "uv": [
+            0,
+            0,
+            1,
+            16
+          ]
+        },
+        "up": {
+          "texture": "#door",
+          "uv": [
+            0,
+            0,
+            12,
+            1
+          ]
+        }
+      }
+    }
+  ]
+}

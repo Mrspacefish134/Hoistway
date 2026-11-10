@@ -6,6 +6,7 @@ import java.util.OptionalInt;
 import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -14,6 +15,9 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
@@ -22,6 +26,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -41,9 +46,17 @@ public class ElevatorCarEntity extends Entity {
     private static final double ACCELERATION = 0.012;
     private static final double CREEP_SPEED = 0.02;
     private static final int DWELL_TICKS = 40;
+    /** How long the cabin doors take to open or close. */
+    public static final int DOOR_TICKS = 10;
 
     private static final EntityDataAccessor<Integer> DATA_SIZE =
             SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_STYLE =
+            SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Direction> DATA_DOOR_SIDE =
+            SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.DIRECTION);
+    private static final EntityDataAccessor<Boolean> DATA_DOORS_OPEN =
+            SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.BOOLEAN);
 
     @Nullable
     private BlockPos motorPos;
@@ -53,6 +66,11 @@ public class ElevatorCarEntity extends Entity {
     /** 1 travelling up, -1 down, 0 idle. Kept through stops so the car finishes its sweep. */
     private int direction;
     private int announcedFloor = Integer.MIN_VALUE;
+    /** Server: how far open the doors are, 0 to DOOR_TICKS. The car only moves once they are shut. */
+    private int doorTicks = DOOR_TICKS;
+    /** Client: door opening for drawing, 0 shut to 1 open. */
+    private float doorOpen = 1.0F;
+    private float oDoorOpen = 1.0F;
 
     private int lerpSteps;
     private double lerpX;
@@ -69,6 +87,39 @@ public class ElevatorCarEntity extends Entity {
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(DATA_SIZE, 1);
+        builder.define(DATA_STYLE, CabinStyle.STANDARD.ordinal());
+        builder.define(DATA_DOOR_SIDE, Direction.SOUTH);
+        builder.define(DATA_DOORS_OPEN, true);
+    }
+
+    public CabinStyle getStyle() {
+        return CabinStyle.byId(this.entityData.get(DATA_STYLE));
+    }
+
+    public void setStyle(CabinStyle style) {
+        this.entityData.set(DATA_STYLE, style.ordinal());
+    }
+
+    /** The side of the cabin the doors are on. */
+    public Direction getDoorSide() {
+        return this.entityData.get(DATA_DOOR_SIDE);
+    }
+
+    public void setDoorSide(Direction side) {
+        this.entityData.set(DATA_DOOR_SIDE, side.getAxis().isHorizontal() ? side : Direction.SOUTH);
+    }
+
+    public boolean areDoorsOpen() {
+        return this.entityData.get(DATA_DOORS_OPEN);
+    }
+
+    private void setDoorsOpen(boolean open) {
+        this.entityData.set(DATA_DOORS_OPEN, open);
+    }
+
+    /** Client: how far open the doors are drawn this frame. */
+    public float getDoorOpen(float partialTick) {
+        return Mth.lerp(partialTick, this.oDoorOpen, this.doorOpen);
     }
 
     public int getSize() {
@@ -95,11 +146,20 @@ public class ElevatorCarEntity extends Entity {
         if (DATA_SIZE.equals(key)) {
             this.refreshDimensions();
         }
+        if (DATA_DOORS_OPEN.equals(key) && this.firstTick) {
+            // A car coming into view shows its doors as they are, without animating them.
+            this.doorOpen = this.oDoorOpen = this.areDoorsOpen() ? 1.0F : 0.0F;
+        }
     }
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         this.setSize(Math.max(1, tag.getInt("Size")));
+        this.setStyle(CabinStyle.byId(tag.getInt("Style")));
+        this.setDoorSide(Direction.from2DDataValue(tag.getInt("DoorSide")));
+        boolean open = !tag.contains("DoorsOpen") || tag.getBoolean("DoorsOpen");
+        this.setDoorsOpen(open);
+        this.doorTicks = open ? DOOR_TICKS : 0;
         this.motorPos = tag.contains("Motor") ? BlockPos.of(tag.getLong("Motor")) : null;
         this.targetY = tag.contains("TargetY") ? tag.getDouble("TargetY") : Double.NaN;
     }
@@ -107,6 +167,9 @@ public class ElevatorCarEntity extends Entity {
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.putInt("Size", this.getSize());
+        tag.putInt("Style", this.getStyle().ordinal());
+        tag.putInt("DoorSide", this.getDoorSide().get2DDataValue());
+        tag.putBoolean("DoorsOpen", this.areDoorsOpen());
         if (this.motorPos != null) {
             tag.putLong("Motor", this.motorPos.asLong());
         }
@@ -180,10 +243,61 @@ public class ElevatorCarEntity extends Entity {
         }
         if (!player.getAbilities().instabuild) {
             this.spawnAtLocation(this.getPickResult());
+            Item kit = this.getStyle().kit();
+            if (kit != null) {
+                this.spawnAtLocation(kit);
+            }
         }
         this.playSound(SoundEvents.ANVIL_BREAK, 0.4F, 0.8F);
         this.discard();
         return true;
+    }
+
+    /**
+     * Using a cabin kit on the car fits that cabin, with its doors facing you. Using the kit the car
+     * already has turns the doors to face you. Sneak and use an empty hand to take the kit back out.
+     */
+    @Override
+    public InteractionResult interact(Player player, InteractionHand hand) {
+        ItemStack held = player.getItemInHand(hand);
+        CabinStyle current = this.getStyle();
+        CabinStyle fitting = held.getItem() instanceof CabinKitItem kit ? kit.style() : null;
+        boolean removing = fitting == null && held.isEmpty() && player.isSecondaryUseActive() && current != CabinStyle.STANDARD;
+        if (fitting == null && !removing) {
+            return InteractionResult.PASS;
+        }
+        if (this.level().isClientSide) {
+            return InteractionResult.SUCCESS;
+        }
+        if (this.isMoving()) {
+            return InteractionResult.FAIL;
+        }
+
+        boolean survival = !player.getAbilities().instabuild;
+        Item oldKit = current.kit();
+        if (removing) {
+            this.setStyle(CabinStyle.STANDARD);
+        } else {
+            this.setDoorSide(player.getDirection().getOpposite());
+            if (fitting != current) {
+                this.setStyle(fitting);
+                if (survival) {
+                    held.shrink(1);
+                }
+            } else {
+                oldKit = null;
+            }
+        }
+        if (oldKit != null && survival) {
+            ItemStack back = new ItemStack(oldKit);
+            if (!player.getInventory().add(back)) {
+                player.drop(back, false);
+            }
+        }
+        this.setDoorsOpen(true);
+        this.doorTicks = DOOR_TICKS;
+        this.playSound(SoundEvents.SMITHING_TABLE_USE, 0.6F, 1.0F);
+        return InteractionResult.CONSUME;
     }
 
     // ---- Network smoothing ----
@@ -217,6 +331,9 @@ public class ElevatorCarEntity extends Entity {
     public void tick() {
         super.tick();
         if (this.level().isClientSide) {
+            this.oDoorOpen = this.doorOpen;
+            float step = 1.0F / DOOR_TICKS;
+            this.doorOpen = this.areDoorsOpen() ? Math.min(1.0F, this.doorOpen + step) : Math.max(0.0F, this.doorOpen - step);
             // The client only follows the server's position; the local rider is carried in ClientHooks.
             if (this.lerpSteps > 0) {
                 this.lerpPositionAndRotationStep(this.lerpSteps, this.lerpX, this.lerpY, this.lerpZ, this.getYRot(), this.getXRot());
@@ -232,6 +349,8 @@ public class ElevatorCarEntity extends Entity {
             this.velocity = 0.0;
             this.targetY = Double.NaN;
         } else {
+            boolean doors = this.getStyle().hasDoors();
+            this.doorTicks = this.areDoorsOpen() ? Math.min(DOOR_TICKS, this.doorTicks + 1) : Math.max(0, this.doorTicks - 1);
             if (Double.isNaN(this.targetY)) {
                 this.velocity = 0.0;
                 if (this.dwell > 0) {
@@ -243,7 +362,12 @@ public class ElevatorCarEntity extends Entity {
                     } else {
                         OptionalInt next = this.chooseNext(motor, oldY);
                         if (next.isPresent()) {
-                            this.beginMove(next.getAsInt());
+                            if (doors && this.doorTicks > 0) {
+                                // Shut the doors first; the car leaves once they are closed.
+                                this.setDoorsOpen(false);
+                            } else {
+                                this.beginMove(next.getAsInt());
+                            }
                         } else {
                             this.direction = 0;
                         }
@@ -359,8 +483,9 @@ public class ElevatorCarEntity extends Entity {
         if (number > 0) {
             this.tellRiders(Component.translatable("hoistway.car.floor", number));
         }
+        this.setDoorsOpen(true);
         this.level().playSound(null, this.getX(), floor + 1.0, this.getZ(),
-                SoundEvents.NOTE_BLOCK_BELL.value(), SoundSource.BLOCKS, 0.8F, 1.4F);
+                Hoistway.CAR_CHIME.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
     }
 
     /** Stops where it is and gives up on the current destination. */

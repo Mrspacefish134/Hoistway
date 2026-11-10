@@ -20,7 +20,7 @@ FFMPEG = "C:/ffmpeg/bin/ffmpeg.exe" if Path("C:/ffmpeg/bin/ffmpeg.exe").exists()
 
 # Sound events worth hearing in the video, and how loud.
 KEEP = {
-    "minecraft:block.note_block.bell": 1.0,
+    "hoistway:car_chime": 0.9,
     "minecraft:block.stone_button.click_on": 0.9,
     "minecraft:block.lever.click": 0.8,
     "minecraft:block.piston.extend": 0.35,
@@ -43,7 +43,14 @@ def sound_files(assets_root):
     digest = objects["minecraft/sounds.json"]["hash"]
     events = json.loads((assets_root / "objects" / digest[:2] / digest).read_text(encoding="utf-8"))
     files = {}
+    mod_assets = ROOT / "src/main/resources/assets/hoistway"
+    mod_events = json.loads((mod_assets / "sounds.json").read_text(encoding="utf-8"))
     for event in KEEP:
+        if event.startswith("hoistway:"):
+            first = mod_events[event.split(":", 1)[1]]["sounds"][0]
+            name = first if isinstance(first, str) else first["name"]
+            files[event] = mod_assets / "sounds" / f"{name.split(':', 1)[1]}.ogg"
+            continue
         entry = events.get(event.split(":", 1)[1])
         if not entry:
             continue

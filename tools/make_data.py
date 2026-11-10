@@ -257,15 +257,142 @@ def car_model(size):
     }, parts)
 
 
+# Fitted cabins are closed in: three walls and a front with a doorway, modelled with the doors on
+# the south side (the renderer turns the cabin to face its door side). The walls are 38 pixels tall
+# between floor and ceiling, drawn from 16x48 textures whose top 38 rows are the wall.
+CABIN_FLOOR, CABIN_CEILING = -13, 25
+DOOR_TOP = 19
+WALL_V = round((CABIN_CEILING - CABIN_FLOOR) * 16 / 48, 4)
+HEADER_V = round((CABIN_CEILING - DOOR_TOP) * 16 / 48, 4)
+
+
+def tiles(a, b):
+    """Splits a..b at every 16 pixels, giving each piece with the start of its 16 pixel tile."""
+    out, start = [], a
+    while start < b:
+        origin = (start // 16) * 16
+        end = min(b, origin + 16)
+        out.append((start, end, origin))
+        start = end
+    return out
+
+
+def doorway(size):
+    """Left and right edges of the door opening."""
+    return (3, 13) if size == 1 else (-4, 20)
+
+
+def cabin_model(size, style):
+    low, high = (0, 16) if size == 1 else (-16, 32)
+    door_lo, door_hi = doorway(size)
+    parts = []
+
+    # Floor and roof, as on the cage.
+    for x in range(low, high, 16):
+        for z in range(low, high, 16):
+            outer = [side for side, on_edge in (("north", z == low), ("south", z + 16 == high),
+                                                ("west", x == low), ("east", x + 16 == high)) if on_edge]
+            sill = {side: face("#trim", [0, 0, 16, 3]) for side in outer}
+            fascia = {side: face("#trim", [0, 4, 16, 7]) for side in outer}
+            parts.append(element([x, -16, z], [x + 16, CABIN_FLOOR, z + 16],
+                                 {"up": face("#floor", [0, 0, 16, 16]), "down": face("#frame", [0, 0, 16, 16]), **sill}))
+            parts.append(element([x, CABIN_CEILING, z], [x + 16, 28, z + 16],
+                                 {"up": face("#roof", [0, 0, 16, 16]), "down": face("#ceiling", [0, 0, 16, 16]), **fascia}))
+
+    def wall(axis, fixed, a, b, outside, inside, inner_texture="#wall", y1=CABIN_FLOOR, y2=CABIN_CEILING, v2=WALL_V):
+        """A one pixel thick wall along x (axis 'x', fixed z) or along z (axis 'z', fixed x)."""
+        for start, end, origin in tiles(a, b):
+            uv = [start - origin, 0, end - origin, v2]
+            faces = {outside: face("#shell", uv), inside: face(inner_texture, uv)}
+            if axis == "x":
+                parts.append(element([start, y1, fixed], [end, y2, fixed + 1], faces))
+            else:
+                parts.append(element([fixed, y1, start], [fixed + 1, y2, end], faces))
+
+    wall("x", low, low + 1, high - 1, "north", "south", "#back")      # back wall
+    wall("z", low, low, high - 1, "west", "east")                      # side walls
+    wall("z", high - 1, low, high - 1, "east", "west")
+    wall("x", high - 1, low, door_lo, "south", "north")                # front, beside the doorway
+    wall("x", high - 1, door_hi, high, "south", "north")
+    wall("x", high - 1, door_lo, door_hi, "south", "north", y1=DOOR_TOP, v2=HEADER_V)   # over it
+    # The reveal round the doorway.
+    reveal = face("#trim", [0, 0, 1, 3])
+    parts.append(element([door_lo - 0.01, CABIN_FLOOR, high - 1], [door_lo, DOOR_TOP, high], {"east": reveal}))
+    parts.append(element([door_hi, CABIN_FLOOR, high - 1], [door_hi + 0.01, DOOR_TOP, high], {"west": reveal}))
+    parts.append(element([door_lo, DOOR_TOP, high - 1], [door_hi, DOOR_TOP + 0.01, high],
+                         {"down": face("#trim", [0, 0, 16, 1])}))
+
+    # Handrail along the back wall.
+    rail = {side: face("#trim", [0, 0, 16, 1]) for side in ("south", "up", "down")}
+    rail["west"] = rail["east"] = face("#trim", [0, 0, 1, 1])
+    parts.append(element([low + 2, 1, low + 1], [high - 2, 2, low + 2], rail))
+
+    # Floor panel on the right-hand wall as you face the doors from inside, beside the doorway.
+    panel_edge = face("#panel", [5, 3, 6, 12])
+    parts.append(element([high - 1.5, 3, high - 9], [high - 1, 12, high - 3], {
+        "west": face("#panel", [5, 3, 11, 12]),
+        "north": panel_edge, "south": panel_edge,
+        "up": face("#panel", [5, 3, 11, 4]), "down": face("#panel", [5, 11, 11, 12]),
+    }))
+
+    # Crosshead, as on the cage.
+    crosshead = {side: face("#frame", [0, 0, 6, 2]) for side in SIDES}
+    crosshead["up"] = face("#frame", [0, 0, 6, 6])
+    parts.append(element([5, 28, 5], [11, 30, 11], crosshead))
+
+    back = "hoistway:block/car_glass_corporate" if style == "corporate" else f"hoistway:block/car_wall_{style}"
+    return model({
+        "floor": f"hoistway:block/car_floor_{style}",
+        "wall": f"hoistway:block/car_wall_{style}",
+        "back": back,
+        "shell": "hoistway:block/car_shell",
+        "trim": f"hoistway:block/car_trim_{style}",
+        "ceiling": f"hoistway:block/car_ceiling_{style}",
+        "panel": f"hoistway:block/car_panel_{style}",
+        "roof": "hoistway:block/car_roof",
+        "frame": "hoistway:block/car_frame",
+        "particle": f"hoistway:block/car_wall_{style}",
+    }, parts)
+
+
+def door_model(size, style, west):
+    """One door leaf, shut. The renderer slides it sideways to open it. The meeting edge (texture
+    column 0) is always at the middle of the doorway."""
+    low, high = (0, 16) if size == 1 else (-16, 32)
+    door_lo, door_hi = doorway(size)
+    middle = (door_lo + door_hi) // 2
+    width = middle - door_lo
+    x1, x2 = (door_lo, middle) if west else (middle, door_hi)
+    meeting_left = [0, 0, width, 16]      # column 0 on the left as seen
+    meeting_right = [width, 0, 0, 16]     # column 0 on the right as seen
+    edge = face("#door", [0, 0, 1, 16])
+    faces = {
+        # From inside you look south, so east is on your left; from outside, west is.
+        "north": face("#door", meeting_left if west else meeting_right),
+        "south": face("#door", meeting_right if west else meeting_left),
+        "west": edge, "east": edge,
+        "up": face("#door", [0, 0, width, 1]),
+    }
+    return model({"door": f"hoistway:block/car_door_{style}", "particle": f"hoistway:block/car_door_{style}"},
+                 [element([x1, CABIN_FLOOR, high - 2], [x2, DOOR_TOP, high - 1], faces)])
+
+
 def car_models():
     write(ASSETS / "models/part/car_small.json", car_model(1))
     write(ASSETS / "models/part/car_large.json", car_model(3))
+    for style in ("retro", "corporate"):
+        for size, name in ((1, "small"), (3, "large")):
+            write(ASSETS / f"models/part/car_{style}_{name}.json", cabin_model(size, style))
+            for west in (True, False):
+                write(ASSETS / f"models/part/door_{style}_{name}_{'west' if west else 'east'}.json",
+                      door_model(size, style, west))
 
 
 # ------------------------------------------------------------------ items, lang
 
 def item_models():
-    for name in ("cable", "speed_upgrade", "stop_upgrade", "creative_upgrade", "elevator_car", "large_elevator_car"):
+    for name in ("cable", "speed_upgrade", "stop_upgrade", "creative_upgrade", "elevator_car", "large_elevator_car",
+                 "retro_cabin_kit", "corporate_cabin_kit"):
         write(ASSETS / f"models/item/{name}.json",
               {"parent": "minecraft:item/generated", "textures": {"layer0": f"hoistway:item/{name}"}})
 
@@ -280,6 +407,9 @@ def lang():
         "item.hoistway.speed_upgrade": "Speed Upgrade",
         "item.hoistway.stop_upgrade": "Stop Upgrade",
         "item.hoistway.creative_upgrade": "Creative Elevator Upgrade",
+        "item.hoistway.retro_cabin_kit": "Retro Cabin Kit",
+        "item.hoistway.corporate_cabin_kit": "Corporate Cabin Kit",
+        "hoistway.subtitle.car_chime": "Elevator chimes",
         "hoistway.car.floor": "Floor %s",
         "hoistway.panel.title": "Elevator",
         "hoistway.car.passing_up": "▲ %s",
@@ -330,6 +460,12 @@ def recipes():
     shaped("stop_upgrade", ["GRG", "RLR", "GRG"], {
         "G": "minecraft:gold_ingot", "R": "minecraft:redstone", "L": "minecraft:lapis_lazuli"},
         "hoistway:stop_upgrade")
+    shaped("retro_cabin_kit", ["PCP", "PGP", "PCP"], {
+        "P": "minecraft:dark_oak_planks", "C": "minecraft:orange_carpet", "G": "minecraft:gold_ingot"},
+        "hoistway:retro_cabin_kit")
+    shaped("corporate_cabin_kit", ["ITI", "IQI", "IBI"], {
+        "I": "minecraft:iron_ingot", "T": "minecraft:tinted_glass", "Q": "minecraft:quartz_block",
+        "B": "minecraft:black_concrete"}, "hoistway:corporate_cabin_kit")
     shaped("escalator", ["I  ", "SI ", "RSI"], {
         "I": "minecraft:iron_ingot", "S": "minecraft:smooth_stone", "R": "minecraft:redstone"},
         "hoistway:escalator", 4)

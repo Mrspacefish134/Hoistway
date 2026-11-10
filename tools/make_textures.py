@@ -35,6 +35,12 @@ PALETTE = {
     # circuit board and gold contacts
     "m": "113B27", "M": "1D6740", "n": "2E915E", "N": "62C489",
     "u": "A85C24", "U": "E5964A",
+    # walnut panelling
+    "a": "2A170B", "b": "3F2412", "c": "573219", "d": "6F4422", "e": "8C5A2F",
+    # orange shag
+    "f": "6E260A", "F": "9C3F15", "H": "C65A1E", "O": "E8853A",
+    # bronze
+    "S": "4E3420", "W": "76522F", "X": "9C7444", "o": "C29766",
 }
 
 T = {}
@@ -127,6 +133,210 @@ T["block/car_ceiling"] = [
     "3766666666666663",
     "3333333333333333",
 ]
+
+# ---------------------------------------------------------------- fitted cabins
+#
+# Walls are 16x48: the top 38 rows run from ceiling (row 0) to floor (row 37); the rest is unused.
+# Doors are 16x32, with the edge where the two leaves meet in column 0.
+
+# The outside of a fitted cabin, seen from the shaft: painted sheet with stiffening ribs.
+SHELL = "2433333324333333"
+SHELL_RIVET = "2435333324353333"
+T["block/car_shell"] = (["2222222222222222"] + ([SHELL] * 3 + [SHELL_RIVET] + [SHELL] * 8) * 3
+                        + [SHELL] * 10 + ["1111111111111111"])
+
+# 1970s: walnut boards between a brass crown and chair rail, darker boards below, brass kick plate.
+RETRO_BOARD_A = [
+    "ddcdded", "dcddded", "dcdddcd", "ddcddcd", "dddcdcd", "ddddcdd", "dddcddd", "ddcddde",
+    "dcdddde", "dcddded", "cdddded", "cdddedd", "dcddedd", "ddcdedd", "dddcded", "ddddcde",
+    "ddddcde", "dddcdde", "ddcddde", "dcdddcd", "dcddcdd", "ddcdcdd", "dddccdd", "ddddcdd",
+]
+RETRO_BOARD_B = [
+    "edcdddd", "edcdddd", "dedcddd", "ddedcdd", "dddecdd", "dddedcd", "ddeddcd", "dedddcd",
+    "eddddcd", "edddcdd", "dedcddd", "ddcdddd", "dcddddd", "cdddddd", "cdddcdd", "dcddcdd",
+    "ddcdcdd", "dddccdd", "ddddcdd", "dddcddd", "ddcdded", "dcddedd", "cdddedd", "cddeddd",
+]
+T["block/car_wall_retro"] = [
+    "aaaaaaaaaaaaaaaa",
+    "DEEEEEEEEEEEEEED",
+    "BCCCCCCCCCCCCCCB",
+] + ["a" + RETRO_BOARD_A[i] + "a" + RETRO_BOARD_B[i] for i in range(24)] + [
+    "BBBBBBBBBBBBBBBB",
+    "DEEEEEEEEEEEEEED",
+    "BCCCCCCCCCCCCCCB",
+    "AAAAAAAAAAAAAAAA",
+    "acbcccbcaccbcccb",
+    "acbccbccacbccbcc",
+    "accbcbccacbcccbc",
+    "acccbbccaccbccbc",
+    "acccbcccacccbccc",
+    "BBBBBBBBBBBBBBBB",
+    "AAAAAAAAAAAAAAAA",
+] + ["aaaaaaaaaaaaaaaa"] * 10
+
+# Orange shag carpet.
+T["block/car_floor_retro"] = [
+    "HFHOFHfFHHOFHFfH",
+    "FHfHHFHOFHFHHfHF",
+    "OHFHfHFHHFHfHOFH",
+    "HFHHOFHfFHOHFHHF",
+    "fHOFHHFHOHFHfHFO",
+    "HFHfHOHFHfHFHOHF",
+    "FHOHFHfHOHFHHFHf",
+    "HfHFHOFHHFHOfHFH",
+    "OHFHHfHFHOHFHFHO",
+    "HFOHfHFHFHfHOHFH",
+    "FHHFHOHfHHOHFHfF",
+    "HOfHFHFHOFHFHHOH",
+    "FHHOHfHFHHfHOHFH",
+    "HFHFHOHHfHOHFHHO",
+    "fHOHFHFOHFHHfHFH",
+    "HFHfHOHFHHOFHOHF",
+]
+
+# A luminous egg-crate ceiling in a walnut surround.
+EGG_A = "bc9ZD9ZD9ZD9ZDcb"
+EGG_B = "bcZzDZzDZzDZzDcb"
+EGG_LINE = "bcDDDDDDDDDDDDcb"
+T["block/car_ceiling_retro"] = (["bbbbbbbbbbbbbbbb", "bccccccccccccccb"]
+                                + [EGG_A, EGG_B, EGG_LINE] * 4
+                                + ["bccccccccccccccb", "bbbbbbbbbbbbbbbb"])
+
+# Rows 0-2: brass sill and handrail. Rows 4-6: walnut fascia.
+T["block/car_trim_retro"] = [
+    "DDDDDDDDDDDDDDDD",
+    "EEEEEEEEEEEEEEEE",
+    "BBBBBBBBBBBBBBBB",
+    "aaaaaaaaaaaaaaaa",
+    "eeeeeeeeeeeeeeee",
+    "dddddddddddddddd",
+    "bbbbbbbbbbbbbbbb",
+    "aaaaaaaaaaaaaaaa",
+] + ["cccccccccccccccc"] * 8
+
+# Brushed bronze leaf with an etched diamond motif.
+RETRO_DOOR = "SoXWXXWXWXXWXWXW"
+RETRO_MOTIF = [
+    "XXXooXXX", "XXoWWoXX", "XoWXXWoX", "oWXooXWo", "XoWXXWoX", "XXoWWoXX", "XXXooXXX",
+    "XXXooXXX", "XXoWWoXX", "XoWXXWoX", "oWXooXWo", "XoWXXWoX", "XXoWWoXX", "XXXooXXX",
+]
+T["block/car_door_retro"] = (["SXXXXXXXXXXXXXXX"] + [RETRO_DOOR] * 7
+                             + ["SoXWSSSSSSSSSSXW"]
+                             + ["SoXWS" + row + "oXW" for row in RETRO_MOTIF]
+                             + ["SoXWooooooooooXW"]
+                             + [RETRO_DOOR] * 7 + ["SSSSSSSSSSSSSSSS"])
+
+# Brass plate: red floor readout, round buttons, the alarm in red.
+def car_panel(rows):
+    return ["." * 16] * 3 + ["....." + row + "....." for row in rows] + ["." * 16] * 4
+
+
+T["block/car_panel_retro"] = car_panel([
+    "DDDDDB",
+    "DkRRkB",
+    "DCCCCB",
+    "D9CC9B",
+    "DCCCCB",
+    "D9CC9B",
+    "DCCCCB",
+    "D9CCRB",
+    "BBBBBA",
+])
+
+# Corporate: brushed steel panels with a reveal at handrail height.
+STEEL_A = "3788887777777776"
+STEEL_B = "3777766667777776"
+STEEL_C = "3777777777777776"
+STEEL_D = "3777777777666676"
+T["block/car_wall_corporate"] = (
+    ["1111111111111111", "2222222222222222"]
+    + [STEEL_A, STEEL_C, STEEL_B, STEEL_C, STEEL_C, STEEL_D, STEEL_C, STEEL_A, STEEL_C,
+       STEEL_C, STEEL_B, STEEL_C, STEEL_D, STEEL_C, STEEL_C, STEEL_A, STEEL_C, STEEL_B]
+    + ["4444444444444444", "2222222222222222"]
+    + [STEEL_C, STEEL_B, STEEL_C, STEEL_C, STEEL_D, STEEL_C, STEEL_A, STEEL_C, STEEL_C,
+       STEEL_B, STEEL_C, STEEL_D, STEEL_C, STEEL_C]
+    + ["3333333333333333", "1111111111111111"]
+    + ["2222222222222222"] * 10)
+
+# Smoked glass back wall in a steel frame, with long diagonal reflections.
+SMOKED = [
+    "KKKKKKKKKKKLlK", "KKKKKKKKKKLlKK", "KKKKKKKKKLlKKK", "KKKKKKKKLlKKKK", "KKKKKKKLlKKKKl",
+    "KKKKKKLlKKKKlK", "KKKKKLlKKKKlKK", "KKKKLlKKKKlKKK", "KKKLlKKKKlKKKK", "KKLlKKKKlKKKKK",
+    "KLlKKKKlKKKKKK", "LlKKKKlKKKKKKK", "lKKKKlKKKKKKKK", "KKKKlKKKKKKKKK", "KKKlKKKKKKKKKK",
+    "KKlKKKKKKKKKKK", "KlKKKKKKKKKKKK", "lKKKKKKKKKKKKK", "KKKKKKKKKKKKKK", "KKKKKKKKKKKKKK",
+    "KKKKKKKKKKKKKl", "KKKKKKKKKKKKlK", "KKKKKKKKKKKlKK", "KKKKKKKKKKlKKK", "KKKKKKKKKlKKKK",
+    "KKKKKKKKlKKKKK", "KKKKKKKlKKKKKK", "KKKKKKlKKKKKKK", "KKKKKlKKKKKKKK", "KKKKlKKKKKKKKK",
+    "KKKlKKKKKKKKKK", "KKKKKKKKKKKKKK", "KKKKKKKKKKKKKK", "kkkkkkkkkkkkkk",
+]
+T["block/car_glass_corporate"] = (["1111111111111111", "3555555555555553"]
+                                  + ["4" + row + "4" for row in SMOKED]
+                                  + ["3555555555555553", "1111111111111111"]
+                                  + ["2222222222222222"] * 10)
+
+# Black granite tiles with pale flecks.
+T["block/car_floor_corporate"] = [
+    "KKlKKKKLKKKKlKK2",
+    "KKKKKlKKKK5KKKK2",
+    "lKKKKKKKlKKKKLK2",
+    "KK7KKKKKKKKlKKK2",
+    "KKKKlKKKK7KKKKK2",
+    "KLKKKKKlKKKKKlK2",
+    "KKKKKKKKKKLKKKK2",
+    "KlKK5KKKKKKKKKl2",
+    "KKKKKKlKKKKK7KK2",
+    "KKLKKKKKKlKKKKK2",
+    "KKKKKKKK5KKKKLK2",
+    "lKKKlKKKKKKKKKK2",
+    "KKKKKKKLKKKlKKK2",
+    "KK5KKlKKKKKKKKl2",
+    "KKKKKKKKKK7KKKK2",
+    "2222222222222222",
+]
+
+# White ceiling with a round downlight.
+CEIL = "7888888888888886"
+T["block/car_ceiling_corporate"] = [
+    "7777777777777777",
+    CEIL, CEIL, CEIL,
+    "7888888668888886",
+    "7888886996888886",
+    "7888869999688886",
+    "7888869999688886",
+    "7888886996888886",
+    "7888888668888886",
+    CEIL, CEIL, CEIL, CEIL, CEIL,
+    "6666666666666665",
+]
+
+# Rows 0-2: steel sill and handrail. Rows 4-6: steel fascia.
+T["block/car_trim_corporate"] = [
+    "8888888888888888",
+    "6666666666666666",
+    "3333333333333333",
+    "1111111111111111",
+    "7777777777777777",
+    "5555555555555555",
+    "3333333333333333",
+    "1111111111111111",
+] + ["4444444444444444"] * 8
+
+# Stainless leaf, lighter towards the top.
+T["block/car_door_corporate"] = (["3555555555555555"] + ["3878777877787778"] * 10
+                                 + ["3777677767776777"] * 11 + ["3676667666766676"] * 9
+                                 + ["3333333333333333"])
+
+# Black glass: blue floor readout and steel buttons, one lit.
+T["block/car_panel_corporate"] = car_panel([
+    "LLLLLK",
+    "LiJJiK",
+    "LKKKKK",
+    "L7KK7K",
+    "LKKKKK",
+    "L7KKjK",
+    "LKKKKK",
+    "L7KK7K",
+    "KKKKKk",
+])
 
 # ---------------------------------------------------------------- motor
 
@@ -384,6 +594,44 @@ T["item/creative_upgrade"] = upgrade_card([
     "MMMMMMMMMM",
 ])
 
+def cabin_kit(inner, outline="x"):
+    """A cabin front: 12 inner rows inside a one pixel outline."""
+    edge = "." + outline * 14 + "."
+    return ["." * 16, edge] + ["." + outline + row + outline + "." for row in inner] + [edge, "." * 16]
+
+
+# Walnut front, red indicator, bronze doors, a strip of orange carpet.
+T["item/retro_cabin_kit"] = cabin_kit([
+    "eddddddddddc",
+    "dcccckRkcccb",
+    "dcDDDDDDDDcb",
+    "dcDoXWSXWDcb",
+    "dcDoXWSXWDcb",
+    "dcDoWoSWoDcb",
+    "dcDXoWSoXDcb",
+    "dcDoWoSWoDcb",
+    "dcDoXWSXWDcb",
+    "dcDoXWSXWDcb",
+    "dcHFHOHFHOcb",
+    "bbbbbbbbbbbb",
+])
+
+# Steel front, blue indicator, stainless doors, granite threshold.
+T["item/corporate_cabin_kit"] = cabin_kit([
+    "877777777776",
+    "7666jJJj6665",
+    "76KKKKKKKK65",
+    "76K987387K65",
+    "76K887387K65",
+    "76K877377K65",
+    "76K877377K65",
+    "76K777377K65",
+    "76K776376K65",
+    "76K766366K65",
+    "76lLlKlLlK65",
+    "555555555555",
+])
+
 T["item/elevator_car"] = [
     ".......65.......",
     ".......65.......",
@@ -458,15 +706,16 @@ def write_png(path, grid):
     path.write_bytes(png)
 
 
-def preview(folder, grids, scale=14, columns=6, gap=10):
+def preview(folder, grids, scale=8, columns=8, gap=10):
     cell = 16 * scale + gap
+    cell_h = max(len(grid) for grid in grids.values()) * scale + gap
     names = list(grids)
     rows = (len(names) + columns - 1) // columns
-    sheet = [[(40, 42, 48, 255)] * (columns * cell + gap) for _ in range(rows * cell + gap)]
+    sheet = [[(40, 42, 48, 255)] * (columns * cell + gap) for _ in range(rows * cell_h + gap)]
     for index, name in enumerate(names):
         grid = grids[name]
         ox = gap + (index % columns) * cell
-        oy = gap + (index // columns) * cell
+        oy = gap + (index // columns) * cell_h
         for y, row in enumerate(grid):
             for x, px in enumerate(row):
                 for sy in range(scale):

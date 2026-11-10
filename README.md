@@ -37,7 +37,7 @@ The car works like a real collective elevator: it keeps travelling in one direct
 at every floor someone asked for on the way, then turns round. If someone presses a Call Button
 on a floor the car is about to pass, it stops there to pick them up.
 
-Bossa nova plays while you ride.
+A C# major seventh chime sounds each time the car arrives. Bossa nova plays while you ride.
 
 The car waits if something is underneath it and stops if the shaft is blocked.
 
@@ -54,6 +54,20 @@ The motor has five slots, shared between cable and upgrades.
 
 If there are more buttoned floors than the motor has stops, the floors nearest the motor are
 served.
+
+### Cabin kits
+
+Cabin kits are cosmetic. They turn the open cage into a closed cabin with sliding doors that open
+when the car arrives and close before it leaves.
+
+| Kit | Look |
+| --- | --- |
+| Retro Cabin Kit | 1970s: walnut panelling, brass rails, orange shag carpet, a glowing egg-crate ceiling and bronze doors |
+| Corporate Cabin Kit | Brushed steel walls, a smoked glass back wall, black granite floor, a downlight and stainless doors |
+
+Use a kit on a parked car to fit it. The doors go on the side you are standing on, so using the
+same kit again from another side turns the doors to face you. Sneak and use an empty hand on the
+car to take the kit back out. Picking the car up also returns its kit.
 
 ## Escalators
 
@@ -72,6 +86,8 @@ Right-click a run with an empty hand to reverse it.
 | 3 Call Buttons | `I` / `B` / `R` | I iron ingot, B stone button, R redstone |
 | Speed Upgrade | `GRG` / `RSR` / `GRG` | G gold ingot, R redstone, S sugar |
 | Stop Upgrade | `GRG` / `RLR` / `GRG` | G gold ingot, R redstone, L lapis lazuli |
+| Retro Cabin Kit | `PCP` / `PGP` / `PCP` | P dark oak planks, C orange carpet, G gold ingot |
+| Corporate Cabin Kit | `ITI` / `IQI` / `IBI` | I iron ingot, T tinted glass, Q block of quartz, B black concrete |
 | 4 Escalators | `I  ` / `SI ` / `RSI` | I iron ingot, S smooth stone, R redstone |
 
 ## Building from source
@@ -86,6 +102,7 @@ The jar is written to `build/libs`.
 
 Textures are drawn as pixel grids in `tools/make_textures.py`, and the models, recipes and
 other JSON come from `tools/make_data.py`. Run either script with Python 3 after editing it.
+The arrival chime is synthesized by `tools/make_chime.py` (needs ffmpeg).
 
 The demo video is recorded by a separate dev-only mod in `src/demo`, which is never part of the
 released jar. `./gradlew runDemo` opens a client that builds a showcase world, plays a scripted

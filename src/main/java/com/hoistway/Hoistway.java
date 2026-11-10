@@ -37,6 +37,9 @@ public class Hoistway {
 
     public static final DeferredHolder<net.minecraft.sounds.SoundEvent, net.minecraft.sounds.SoundEvent> ELEVATOR_MUSIC =
             SOUNDS.register("elevator_music", () -> net.minecraft.sounds.SoundEvent.createVariableRangeEvent(id("elevator_music")));
+    /** The arrival chime: a C# major seventh arpeggio. */
+    public static final DeferredHolder<net.minecraft.sounds.SoundEvent, net.minecraft.sounds.SoundEvent> CAR_CHIME =
+            SOUNDS.register("car_chime", () -> net.minecraft.sounds.SoundEvent.createVariableRangeEvent(id("car_chime")));
 
     // ---- Blocks ----
 
@@ -79,6 +82,11 @@ public class Hoistway {
     public static final DeferredItem<Item> CREATIVE_UPGRADE = ITEMS.registerSimpleItem("creative_upgrade",
             new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC));
 
+    public static final DeferredItem<CabinKitItem> RETRO_CABIN_KIT = ITEMS.registerItem("retro_cabin_kit",
+            props -> new CabinKitItem(props, CabinStyle.RETRO), new Item.Properties().stacksTo(1));
+    public static final DeferredItem<CabinKitItem> CORPORATE_CABIN_KIT = ITEMS.registerItem("corporate_cabin_kit",
+            props -> new CabinKitItem(props, CabinStyle.CORPORATE), new Item.Properties().stacksTo(1));
+
     public static final DeferredItem<ElevatorCarItem> ELEVATOR_CAR = ITEMS.registerItem("elevator_car",
             props -> new ElevatorCarItem(props, 1), new Item.Properties().stacksTo(1));
     public static final DeferredItem<ElevatorCarItem> LARGE_ELEVATOR_CAR = ITEMS.registerItem("large_elevator_car",
@@ -116,6 +124,8 @@ public class Hoistway {
                         out.accept(SPEED_UPGRADE.get());
                         out.accept(STOP_UPGRADE.get());
                         out.accept(CREATIVE_UPGRADE.get());
+                        out.accept(RETRO_CABIN_KIT.get());
+                        out.accept(CORPORATE_CABIN_KIT.get());
                         out.accept(ESCALATOR_ITEM.get());
                     })
                     .build());

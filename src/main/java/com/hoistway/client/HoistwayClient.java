@@ -28,8 +28,7 @@ public class HoistwayClient {
 
     /** Moving parts are plain JSON models that are baked on their own and drawn by the renderers. */
     private static void registerModels(ModelEvent.RegisterAdditional event) {
-        event.register(CarRenderer.SMALL);
-        event.register(CarRenderer.LARGE);
+        CarRenderer.models().forEach(event::register);
         event.register(MotorRenderer.DRUM);
         event.register(EscalatorRenderer.STEP);
     }
