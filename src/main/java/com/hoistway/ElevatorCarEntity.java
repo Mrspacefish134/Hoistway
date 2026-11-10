@@ -1,6 +1,7 @@
 package com.hoistway;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 import javax.annotation.Nullable;
@@ -57,9 +58,10 @@ public class ElevatorCarEntity extends Entity {
             SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.DIRECTION);
     private static final EntityDataAccessor<Boolean> DATA_DOORS_OPEN =
             SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.BOOLEAN);
+    /** Synced so the client can find the motor's music discs. */
+    private static final EntityDataAccessor<Optional<BlockPos>> DATA_MOTOR =
+            SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
 
-    @Nullable
-    private BlockPos motorPos;
     private double targetY = Double.NaN;
     private double velocity;
     private int dwell;
@@ -90,6 +92,7 @@ public class ElevatorCarEntity extends Entity {
         builder.define(DATA_STYLE, CabinStyle.STANDARD.ordinal());
         builder.define(DATA_DOOR_SIDE, Direction.SOUTH);
         builder.define(DATA_DOORS_OPEN, true);
+        builder.define(DATA_MOTOR, Optional.empty());
     }
 
     public CabinStyle getStyle() {
@@ -133,11 +136,11 @@ public class ElevatorCarEntity extends Entity {
 
     @Nullable
     public BlockPos getMotorPos() {
-        return this.motorPos;
+        return this.entityData.get(DATA_MOTOR).orElse(null);
     }
 
     public void setMotorPos(@Nullable BlockPos motorPos) {
-        this.motorPos = motorPos;
+        this.entityData.set(DATA_MOTOR, Optional.ofNullable(motorPos));
     }
 
     @Override
@@ -160,7 +163,7 @@ public class ElevatorCarEntity extends Entity {
         boolean open = !tag.contains("DoorsOpen") || tag.getBoolean("DoorsOpen");
         this.setDoorsOpen(open);
         this.doorTicks = open ? DOOR_TICKS : 0;
-        this.motorPos = tag.contains("Motor") ? BlockPos.of(tag.getLong("Motor")) : null;
+        this.setMotorPos(tag.contains("Motor") ? BlockPos.of(tag.getLong("Motor")) : null);
         this.targetY = tag.contains("TargetY") ? tag.getDouble("TargetY") : Double.NaN;
     }
 
@@ -170,8 +173,9 @@ public class ElevatorCarEntity extends Entity {
         tag.putInt("Style", this.getStyle().ordinal());
         tag.putInt("DoorSide", this.getDoorSide().get2DDataValue());
         tag.putBoolean("DoorsOpen", this.areDoorsOpen());
-        if (this.motorPos != null) {
-            tag.putLong("Motor", this.motorPos.asLong());
+        BlockPos motorPos = this.getMotorPos();
+        if (motorPos != null) {
+            tag.putLong("Motor", motorPos.asLong());
         }
         if (!Double.isNaN(this.targetY)) {
             tag.putDouble("TargetY", this.targetY);
@@ -388,9 +392,10 @@ public class ElevatorCarEntity extends Entity {
     }
 
     @Nullable
-    private MotorBlockEntity getMotor() {
-        if (this.motorPos != null && this.level().isLoaded(this.motorPos)
-                && this.level().getBlockEntity(this.motorPos) instanceof MotorBlockEntity motor) {
+    public MotorBlockEntity getMotor() {
+        BlockPos motorPos = this.getMotorPos();
+        if (motorPos != null && this.level().isLoaded(motorPos)
+                && this.level().getBlockEntity(motorPos) instanceof MotorBlockEntity motor) {
             return motor;
         }
         return null;

@@ -1,6 +1,10 @@
 package com.hoistway;
 
+import com.mojang.datafixers.util.Pair;
+
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -8,8 +12,16 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-/** Five slots laid out like a hopper. They take cable and upgrades only. */
+/**
+ * A hopper-style row of five slots for cable and upgrades, and below it three slots for music
+ * discs that replace the elevator music.
+ */
 public class MotorMenu extends AbstractContainerMenu {
+    /** Where the empty disc slots show a disc outline, like the smithing table's empty slots. */
+    public static final ResourceLocation EMPTY_DISC_SLOT = Hoistway.id("item/empty_slot_music_disc");
+    /** How far the player inventory sits below where the hopper screen has it. */
+    public static final int DISC_ROW_HEIGHT = 22;
+
     private final Container motor;
 
     public MotorMenu(int id, Inventory inventory) {
@@ -22,7 +34,7 @@ public class MotorMenu extends AbstractContainerMenu {
         checkContainerSize(motor, MotorBlockEntity.SLOTS);
         motor.startOpen(inventory.player);
 
-        for (int slot = 0; slot < MotorBlockEntity.SLOTS; slot++) {
+        for (int slot = 0; slot < MotorBlockEntity.UPGRADE_SLOTS; slot++) {
             this.addSlot(new Slot(motor, slot, 44 + slot * 18, 20) {
                 @Override
                 public boolean mayPlace(ItemStack stack) {
@@ -30,13 +42,32 @@ public class MotorMenu extends AbstractContainerMenu {
                 }
             });
         }
+        for (int disc = 0; disc < MotorBlockEntity.DISC_SLOTS; disc++) {
+            this.addSlot(new Slot(motor, MotorBlockEntity.UPGRADE_SLOTS + disc, 62 + disc * 18, 42) {
+                @Override
+                public boolean mayPlace(ItemStack stack) {
+                    return MotorBlockEntity.isDisc(stack);
+                }
+
+                @Override
+                public int getMaxStackSize() {
+                    return 1;
+                }
+
+                @Override
+                public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
+                    return Pair.of(InventoryMenu.BLOCK_ATLAS, EMPTY_DISC_SLOT);
+                }
+            });
+        }
+        int inventoryTop = 51 + DISC_ROW_HEIGHT;
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
-                this.addSlot(new Slot(inventory, column + row * 9 + 9, 8 + column * 18, row * 18 + 51));
+                this.addSlot(new Slot(inventory, column + row * 9 + 9, 8 + column * 18, row * 18 + inventoryTop));
             }
         }
         for (int column = 0; column < 9; column++) {
-            this.addSlot(new Slot(inventory, column, 8 + column * 18, 109));
+            this.addSlot(new Slot(inventory, column, 8 + column * 18, inventoryTop + 58));
         }
     }
 

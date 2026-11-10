@@ -15,7 +15,13 @@ import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.JukeboxSong;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -39,7 +45,11 @@ import net.minecraft.world.phys.AABB;
  * the car has been asked to visit, from call buttons outside and the panel inside.
  */
 public class MotorBlockEntity extends BaseContainerBlockEntity {
-    public static final int SLOTS = 5;
+    /** Cable and upgrades. */
+    public static final int UPGRADE_SLOTS = 5;
+    /** Music discs that play in the car instead of the elevator music, in order. */
+    public static final int DISC_SLOTS = 3;
+    public static final int SLOTS = UPGRADE_SLOTS + DISC_SLOTS;
     /** Call buttons this many blocks sideways from the motor belong to its shaft. */
     public static final int SCAN_RADIUS = 3;
     /** How far a motor with the Creative Upgrade can lower its car. */
@@ -59,6 +69,7 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
 
     // Client only: what the renderer needs.
     private int clientCableLength;
+    private List<ResourceLocation> clientDiscs = List.of();
     @Nullable
     private ElevatorCarEntity clientCar;
     private int clientSearchDelay;
@@ -72,6 +83,29 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
     public static boolean accepts(ItemStack stack) {
         return stack.is(Hoistway.CABLE) || stack.is(Hoistway.SPEED_UPGRADE)
                 || stack.is(Hoistway.STOP_UPGRADE) || stack.is(Hoistway.CREATIVE_UPGRADE);
+    }
+
+    public static boolean isDisc(ItemStack stack) {
+        return stack.has(DataComponents.JUKEBOX_PLAYABLE);
+    }
+
+    public static boolean accepts(int slot, ItemStack stack) {
+        return slot < UPGRADE_SLOTS ? accepts(stack) : isDisc(stack);
+    }
+
+    /** The songs of the inserted discs, as sound event ids, in slot order. */
+    private List<ResourceLocation> discSongs(HolderLookup.Provider registries) {
+        List<ResourceLocation> songs = new ArrayList<>();
+        for (int slot = UPGRADE_SLOTS; slot < SLOTS; slot++) {
+            JukeboxSong.fromStack(registries, this.items.get(slot))
+                    .ifPresent(song -> songs.add(song.value().soundEvent().value().getLocation()));
+        }
+        return songs;
+    }
+
+    /** Client: the songs to play in the car, or an empty list for the elevator music. */
+    public List<ResourceLocation> getClientDiscs() {
+        return this.clientDiscs;
     }
 
     private int count(Item item) {
@@ -317,6 +351,11 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
         tag.putInt("CableLength", this.getCableLength());
+        ListTag discs = new ListTag();
+        for (ResourceLocation song : this.discSongs(registries)) {
+            discs.add(StringTag.valueOf(song.toString()));
+        }
+        tag.put("Discs", discs);
         return tag;
     }
 
@@ -333,6 +372,16 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
         }
         if (tag.contains("CableLength")) {
             this.clientCableLength = tag.getInt("CableLength");
+        }
+        if (tag.contains("Discs")) {
+            List<ResourceLocation> discs = new ArrayList<>();
+            for (Tag entry : tag.getList("Discs", Tag.TAG_STRING)) {
+                ResourceLocation song = ResourceLocation.tryParse(entry.getAsString());
+                if (song != null) {
+                    discs.add(song);
+                }
+            }
+            this.clientDiscs = List.copyOf(discs);
         }
     }
 
@@ -370,6 +419,6 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return accepts(stack);
+        return accepts(slot, stack);
     }
 }

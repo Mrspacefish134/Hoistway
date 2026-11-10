@@ -170,14 +170,66 @@ def step(start, end):
     })
 
 
+def escalator_landing(head):
+    """Where a run meets a floor. The sloped balustrades end square to the incline, which leaves
+    them hanging over the landing at the head and buried in the ground at the foot. This levels each
+    handrail out across the landing block, ending in a newel, and lays a tread plate with a yellow
+    comb edge where you step on and off. Modelled for the head (landing to the north, its floor at
+    y 16); the foot is the same mirrored (landing to the south, floor at y 0)."""
+    floor = 16 if head else 0
+    # The sloped sections end on a cut square to the incline: the line y = z + 16 at the head and
+    # y = z - 16 at the foot. Their handrail ends 10-12 pixels above the floor, at z 12 (head) and
+    # z 28 (foot); the flat panel fills the wedge the cut leaves open, out to the far end.
+    far = -16 if head else 32
+    panel_z = (-16, 12) if head else (16, 32)
+    rail_z = (-16, 12) if head else (28, 32)
+    parts = []
+    for x1, x2 in ((0, 1), (15, 16)):
+        # Set in by a hair so where they overlap the sloped parts, those win instead of flickering.
+        lo, hi = x1 + 0.05, x2 - 0.05
+        for start, end, origin in tiles(*panel_z):
+            u = [start - origin, end - origin]
+            parts.append(element([lo, floor, start], [hi, floor + 2, end], {
+                "west": face("#skirt", [u[0], 0, u[1], 2]), "east": face("#skirt", [u[0], 0, u[1], 2])}))
+            parts.append(element([lo, floor + 2, start], [hi, floor + 10, end], {
+                "west": face("#panel", [u[0], 0, u[1], 16]), "east": face("#panel", [u[0], 0, u[1], 16])}))
+        for start, end, origin in tiles(*rail_z):
+            u = [start - origin, end - origin]
+            parts.append(element([x1 - 0.45, floor + 10, start], [x2 + 0.45, floor + 12, end], {
+                "west": face("#handrail", [u[0], 0, u[1], 2]), "east": face("#handrail", [u[0], 0, u[1], 2]),
+                "up": face("#handrail", [0, u[0], 2, u[1]]), "down": face("#handrail", [0, u[0], 2, u[1]])}))
+        # The far end: panel edge, and the handrail turning down round the newel.
+        end_side = "north" if head else "south"
+        cap_z = (far, far + 2) if head else (far - 2, far)
+        parts.append(element([lo, floor, cap_z[0]], [hi, floor + 10, cap_z[1]],
+                             {end_side: face("#skirt", [0, 0, 1, 10])}))
+        parts.append(element([x1 - 0.45, floor + 4, cap_z[0]], [x2 + 0.45, floor + 12, cap_z[1]], {
+            end_side: face("#handrail", [0, 0, 2, 8]),
+            "west": face("#handrail", [0, 0, 2, 8]), "east": face("#handrail", [0, 0, 2, 8]),
+            "down": face("#handrail", [0, 0, 2, 2])}))
+    # Tread plate across the landing, with the comb edge against the steps.
+    plate_z = (-16, 0) if head else (16, 32)
+    comb_z = (-1, 0) if head else (16, 17)
+    parts.append(element([1, floor, plate_z[0]], [15, floor + 0.5, plate_z[1]], {
+        "up": face("#plate", [1, 0, 15, 16]),
+        end_side: face("#plate", [1, 0, 15, 1])}))
+    parts.append(element([1, floor + 0.5, comb_z[0]], [15, floor + 0.75, comb_z[1]], {
+        "up": face("#step", [1, 7, 15, 8]),
+        "north": face("#step", [1, 7, 15, 8]), "south": face("#step", [1, 7, 15, 8])}))
+    return parts
+
+
 def escalator_models():
     textures = {
         "panel": "hoistway:block/escalator_panel",
         "skirt": "hoistway:block/escalator_skirt",
         "handrail": "hoistway:block/escalator_handrail",
         "step": "hoistway:block/escalator_step",
+        "plate": "hoistway:block/car_floor",
         "particle": "hoistway:block/escalator_skirt",
     }
+    write(ASSETS / "models/block/escalator_head.json", model(textures, escalator_landing(True)))
+    write(ASSETS / "models/block/escalator_foot.json", model(textures, escalator_landing(False)))
     write(ASSETS / "models/block/escalator.json",
           model(textures, escalator_static(), parent="minecraft:block/block"))
 
@@ -205,7 +257,9 @@ def escalator_models():
     multipart = []
     for facing, y in FACINGS.items():
         for name, when in (("escalator", {"facing": facing}),
-                           ("escalator_comb", {"facing": facing, "top": "true"})):
+                           ("escalator_comb", {"facing": facing, "top": "true"}),
+                           ("escalator_head", {"facing": facing, "top": "true"}),
+                           ("escalator_foot", {"facing": facing, "bottom": "true"})):
             apply = {"model": f"hoistway:block/{name}"}
             if y:
                 apply["y"] = y

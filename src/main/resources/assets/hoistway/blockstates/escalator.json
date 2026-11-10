@@ -19,6 +19,24 @@
     },
     {
       "when": {
+        "facing": "north",
+        "top": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_head"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "bottom": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_foot"
+      }
+    },
+    {
+      "when": {
         "facing": "east"
       },
       "apply": {
@@ -33,6 +51,26 @@
       },
       "apply": {
         "model": "hoistway:block/escalator_comb",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "top": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_head",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "bottom": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_foot",
         "y": 90
       }
     },
@@ -57,6 +95,26 @@
     },
     {
       "when": {
+        "facing": "south",
+        "top": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_head",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "bottom": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_foot",
+        "y": 180
+      }
+    },
+    {
+      "when": {
         "facing": "west"
       },
       "apply": {
@@ -71,6 +129,26 @@
       },
       "apply": {
         "model": "hoistway:block/escalator_comb",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "top": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_head",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "bottom": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_foot",
         "y": 270
       }
     }

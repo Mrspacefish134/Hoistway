@@ -1,11 +1,17 @@
 package com.hoistway.client;
 
+import java.util.List;
+
 import javax.annotation.Nullable;
 
 import com.hoistway.CallButtonBlock;
 import com.hoistway.CarStepPayload;
 import com.hoistway.ElevatorCarEntity;
+import com.hoistway.Hoistway;
+import com.hoistway.MotorBlockEntity;
 import com.hoistway.PanelPayloads;
+
+import net.minecraft.resources.ResourceLocation;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -26,6 +32,9 @@ public final class ClientHooks {
     private static boolean sneakWasDown;
     @Nullable
     private static ElevatorMusic music;
+    /** Which of the motor's discs is playing. */
+    private static int track;
+    private static long retryAt = Long.MIN_VALUE;
 
     private ClientHooks() {
     }
@@ -113,18 +122,40 @@ public final class ClientHooks {
         jumpWasDown = jump;
         sneakWasDown = sneak;
 
-        // Elevator music: starts when you step into a car, fades out when you step off.
+        // Elevator music: starts when you step into a car, fades out when you step off. Music discs
+        // in the motor play instead, one after another, round and round.
         ElevatorCarEntity car = ridingCar();
-        if (music != null && music.isStopped()) {
+        if (music != null && (music.isStopped() || !minecraft.getSoundManager().isActive(music))) {
+            if (!music.isStopped()) {
+                // The disc finished by itself: on to the next. One that ended at once could not be
+                // played, so wait a while before trying again rather than retrying every tick.
+                track++;
+                if (music.ticksPlayed() < 20) {
+                    retryAt = minecraft.level.getGameTime() + 100L;
+                }
+            }
             music = null;
         }
-        if (car != null && (music == null || music.car() != car)) {
-            if (music != null) {
-                music.fadeOut();
-            }
-            music = new ElevatorMusic(car);
-            minecraft.getSoundManager().play(music);
+        if (car == null) {
+            return;
         }
+        MotorBlockEntity motor = car.getMotor();
+        List<ResourceLocation> discs = motor != null ? motor.getClientDiscs() : List.of();
+        ResourceLocation wanted = discs.isEmpty() ? Hoistway.ELEVATOR_MUSIC.getId() : discs.get(Math.floorMod(track, discs.size()));
+        if (music != null && music.car() == car && music.track().equals(wanted)) {
+            return;
+        }
+        if (music == null && minecraft.level.getGameTime() < retryAt) {
+            return;
+        }
+        if (music != null) {
+            if (music.car() != car) {
+                track = 0;
+            }
+            music.fadeOut();
+        }
+        music = new ElevatorMusic(car, wanted, discs.isEmpty());
+        minecraft.getSoundManager().play(music);
     }
 
     static boolean isRiding(ElevatorCarEntity car) {

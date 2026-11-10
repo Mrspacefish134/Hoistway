@@ -37,13 +37,14 @@ The car works like a real collective elevator: it keeps travelling in one direct
 at every floor someone asked for on the way, then turns round. If someone presses a Call Button
 on a floor the car is about to pass, it stops there to pick them up.
 
-A C# major seventh chime sounds each time the car arrives. Bossa nova plays while you ride.
+A C# major seventh chime sounds each time the car arrives. Bossa nova plays while you ride,
+unless the motor has music discs in it (see below).
 
 The car waits if something is underneath it and stops if the shaft is blocked.
 
 ### Upgrades
 
-The motor has five slots, shared between cable and upgrades.
+The motor's top row of five slots is shared between cable and upgrades.
 
 | Item | Effect |
 | --- | --- |
@@ -54,6 +55,12 @@ The motor has five slots, shared between cable and upgrades.
 
 If there are more buttoned floors than the motor has stops, the floors nearest the motor are
 served.
+
+### Music discs
+
+The motor's bottom row holds up to three music discs. When it has any, they play in the car
+instead of the bossa nova: in order from left to right, then round again. Take them all out to get
+the elevator music back.
 
 ### Cabin kits
 
@@ -72,7 +79,9 @@ car to take the kit back out. Picking the car up also returns its kit.
 ## Escalators
 
 Place Escalator blocks in a diagonal run, the way you would place stairs; they climb in the
-direction you are facing. The steps move and carry players, mobs and items along.
+direction you are facing. The steps move and carry players, mobs and items along. At the top and
+bottom of a run the handrails level out across the landing, with a tread plate where you step
+on and off.
 Right-click a run with an empty hand to reverse it.
 
 ## Recipes

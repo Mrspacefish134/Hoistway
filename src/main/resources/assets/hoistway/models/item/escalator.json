@@ -6,6 +6,7 @@
     "skirt": "hoistway:block/escalator_skirt",
     "handrail": "hoistway:block/escalator_handrail",
     "step": "hoistway:block/escalator_step",
+    "plate": "hoistway:block/car_floor",
     "particle": "hoistway:block/escalator_skirt"
   },
   "elements": [
