@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -49,6 +50,9 @@ public class ElevatorCarEntity extends Entity {
     private double targetY = Double.NaN;
     private double velocity;
     private int dwell;
+    /** 1 travelling up, -1 down, 0 idle. Kept through stops so the car finishes its sweep. */
+    private int direction;
+    private int announcedFloor = Integer.MIN_VALUE;
 
     private int lerpSteps;
     private double lerpX;
@@ -135,9 +139,15 @@ public class ElevatorCarEntity extends Entity {
         return distance < 256.0 * 256.0;
     }
 
+    /**
+     * Solid only on the client. Each client moves its own player and keeps it on the floor, but the
+     * server checks that movement against where the car is on the server, a few ticks ahead of what
+     * the client shows. A solid floor there makes the server reject the rider's move and drop them
+     * through. Entities the server moves (mobs, items) are held on the floor by {@link #carryEntities}.
+     */
     @Override
     public boolean canBeCollidedWith() {
-        return true;
+        return this.level().isClientSide;
     }
 
     @Override
@@ -227,19 +237,23 @@ public class ElevatorCarEntity extends Entity {
                 if (this.dwell > 0) {
                     this.dwell--;
                 } else {
-                    OptionalInt call = motor.peekCall();
-                    if (call.isPresent()) {
-                        int floor = call.getAsInt();
-                        if (Math.abs(floor - oldY) < 0.01) {
-                            this.arrive(motor, floor);
+                    int here = (int) Math.round(oldY);
+                    if (Math.abs(here - oldY) < 0.01 && motor.getRequests().contains(here)) {
+                        this.arrive(motor, here);
+                    } else {
+                        OptionalInt next = this.chooseNext(motor, oldY);
+                        if (next.isPresent()) {
+                            this.beginMove(next.getAsInt());
                         } else {
-                            this.beginMove(floor);
+                            this.direction = 0;
                         }
                     }
                 }
             }
             if (!Double.isNaN(this.targetY)) {
+                this.retarget(motor, oldY);
                 newY = this.advance(motor, oldY);
+                this.announcePassing(motor, newY);
             }
         }
 
@@ -262,7 +276,72 @@ public class ElevatorCarEntity extends Entity {
         return !Double.isNaN(this.targetY);
     }
 
+    /**
+     * Collective control: keep going the way the car is already heading while anyone ahead has
+     * asked for a floor, then turn round.
+     */
+    private OptionalInt chooseNext(MotorBlockEntity motor, double y) {
+        Integer above = null;
+        Integer below = null;
+        for (int floor : motor.getRequests()) {
+            if (floor > y + 0.01 && above == null) {
+                above = floor;
+            } else if (floor < y - 0.01) {
+                below = floor;
+            }
+        }
+        if (above == null && below == null) {
+            return OptionalInt.empty();
+        }
+        if (above == null) {
+            return OptionalInt.of(below);
+        }
+        if (below == null) {
+            return OptionalInt.of(above);
+        }
+        if (this.direction > 0) {
+            return OptionalInt.of(above);
+        }
+        if (this.direction < 0) {
+            return OptionalInt.of(below);
+        }
+        return OptionalInt.of(above - y <= y - below ? above : below);
+    }
+
+    /** Someone called the car from a floor it is about to pass: stop there if it can still brake. */
+    private void retarget(MotorBlockEntity motor, double y) {
+        double braking = this.velocity * this.velocity / (2.0 * ACCELERATION) + this.velocity;
+        for (int floor : motor.getRequests()) {
+            boolean ahead = this.direction > 0
+                    ? floor > y + braking && floor < this.targetY
+                    : floor < y - braking && floor > this.targetY;
+            if (ahead && Math.abs(floor - y) < Math.abs(this.targetY - y)) {
+                this.targetY = floor;
+            }
+        }
+    }
+
+    /** Tells the riders which floor they are passing. */
+    private void announcePassing(MotorBlockEntity motor, double y) {
+        int nearest = (int) Math.round(y);
+        if (Math.abs(nearest - y) > 0.5 || nearest == this.announcedFloor || Double.isNaN(this.targetY)) {
+            return;
+        }
+        int number = motor.floorNumber(nearest);
+        if (number > 0) {
+            this.announcedFloor = nearest;
+            this.tellRiders(Component.translatable(this.direction > 0 ? "hoistway.car.passing_up" : "hoistway.car.passing_down", number));
+        }
+    }
+
+    private void tellRiders(Component message) {
+        for (Player player : this.level().getEntitiesOfClass(Player.class, this.cabinBox().inflate(0.3, 0.5, 0.3))) {
+            player.displayClientMessage(message, true);
+        }
+    }
+
     private void beginMove(int floor) {
+        this.direction = floor > this.getY() ? 1 : -1;
         this.targetY = floor;
         this.velocity = 0.0;
         this.dwell = 0;
@@ -274,18 +353,23 @@ public class ElevatorCarEntity extends Entity {
         this.targetY = Double.NaN;
         this.velocity = 0.0;
         this.dwell = DWELL_TICKS;
-        motor.finishCall(floor);
+        this.announcedFloor = floor;
+        motor.clearRequest(floor);
+        int number = motor.floorNumber(floor);
+        if (number > 0) {
+            this.tellRiders(Component.translatable("hoistway.car.floor", number));
+        }
         this.level().playSound(null, this.getX(), floor + 1.0, this.getZ(),
                 SoundEvents.NOTE_BLOCK_BELL.value(), SoundSource.BLOCKS, 0.8F, 1.4F);
     }
 
     /** Stops where it is and gives up on the current destination. */
     private void halt(MotorBlockEntity motor, boolean blocked) {
-        int floor = (int) Math.round(this.targetY);
         this.targetY = Double.NaN;
         this.velocity = 0.0;
         this.dwell = 20;
-        motor.finishCall(floor);
+        this.direction = 0;
+        motor.clearRequests();
         if (blocked) {
             this.level().playSound(null, this.getX(), this.getY() + 1.0, this.getZ(),
                     SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.25F, 0.5F);
@@ -424,13 +508,28 @@ public class ElevatorCarEntity extends Entity {
                 }
             }
         }
-        if (next == null) {
-            return;
+        if (next != null) {
+            motor.request(next);
         }
-        if (Double.isNaN(this.targetY)) {
-            this.beginMove(next);
-        } else {
-            this.targetY = next;
+    }
+
+    /** What the floor panel shows, or null if the car has no motor. */
+    @Nullable
+    public PanelPayloads.Contents panelContents() {
+        MotorBlockEntity motor = this.getMotor();
+        if (motor == null) {
+            return null;
+        }
+        int here = (int) Math.round(this.getY());
+        int current = Double.isNaN(this.targetY) && Math.abs(here - this.getY()) < 0.01 ? here : Integer.MIN_VALUE;
+        return PanelPayloads.Contents.of(this.getId(), motor.getStops(), current, motor.getRequests());
+    }
+
+    /** A floor chosen on the panel inside the car. */
+    public void requestFloor(int floorY) {
+        MotorBlockEntity motor = this.getMotor();
+        if (motor != null && !(Double.isNaN(this.targetY) && Math.abs(floorY - this.getY()) < 0.01)) {
+            motor.request(floorY);
         }
     }
 }

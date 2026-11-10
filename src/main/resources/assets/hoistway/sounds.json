@@ -1,0 +1,8 @@
+{
+  "elevator_music": {
+    "sounds": [
+      {"name": "hoistway:music/two_left_socks", "stream": true},
+      {"name": "hoistway:music/which_brand_of_mustard", "stream": true}
+    ]
+  }
+}

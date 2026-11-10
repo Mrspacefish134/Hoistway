@@ -6,12 +6,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalInt;
 import java.util.TreeMap;
 
 import javax.annotation.Nullable;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
+import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
@@ -35,12 +35,15 @@ import net.minecraft.world.phys.AABB;
 
 /**
  * The winch at the top of the shaft. Holds the cable and upgrades, works out which floors are
- * stops (every call button near the shaft that the cable can reach) and queues the calls.
+ * stops (every call button near the shaft that the cable can reach) and keeps the set of floors
+ * the car has been asked to visit, from call buttons outside and the panel inside.
  */
 public class MotorBlockEntity extends BaseContainerBlockEntity {
     public static final int SLOTS = 5;
     /** Call buttons this many blocks sideways from the motor belong to its shaft. */
     public static final int SCAN_RADIUS = 3;
+    /** How far a motor with the Creative Upgrade can lower its car. */
+    public static final int CREATIVE_CABLE = 4096;
 
     private static final double BASE_SPEED = 0.12;
     private static final double SPEED_PER_UPGRADE = 0.08;
@@ -48,10 +51,11 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
     private static final int STOPS_PER_UPGRADE = 2;
 
     private NonNullList<ItemStack> items = NonNullList.withSize(SLOTS, ItemStack.EMPTY);
-    private final IntArrayList calls = new IntArrayList();
+    private final IntSortedSet requests = new IntRBTreeSet();
     private final List<Integer> stops = new ArrayList<>();
     private final Map<Integer, List<BlockPos>> buttons = new HashMap<>();
-    private long lastScan = Long.MIN_VALUE;
+    private long lastScan;
+    private boolean stopsDirty = true;
 
     // Client only: what the renderer needs.
     private int clientCableLength;
@@ -66,7 +70,8 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
     // ---- Contents ----
 
     public static boolean accepts(ItemStack stack) {
-        return stack.is(Hoistway.CABLE) || stack.is(Hoistway.SPEED_UPGRADE) || stack.is(Hoistway.STOP_UPGRADE);
+        return stack.is(Hoistway.CABLE) || stack.is(Hoistway.SPEED_UPGRADE)
+                || stack.is(Hoistway.STOP_UPGRADE) || stack.is(Hoistway.CREATIVE_UPGRADE);
     }
 
     private int count(Item item) {
@@ -79,6 +84,10 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
         return total;
     }
 
+    public boolean isCreative() {
+        return this.count(Hoistway.CREATIVE_UPGRADE.get()) > 0;
+    }
+
     /** Blocks per tick at full speed. */
     public double getSpeed() {
         return BASE_SPEED + SPEED_PER_UPGRADE * this.count(Hoistway.SPEED_UPGRADE.get());
@@ -86,30 +95,38 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
 
     /** How many blocks below its top position the car can be lowered. */
     public int getCableLength() {
-        return this.level != null && this.level.isClientSide ? this.clientCableLength : this.count(Hoistway.CABLE.get());
+        if (this.level != null && this.level.isClientSide) {
+            return this.clientCableLength;
+        }
+        return this.isCreative() ? CREATIVE_CABLE : this.count(Hoistway.CABLE.get());
     }
 
     public int getMaxStops() {
-        return BASE_STOPS + STOPS_PER_UPGRADE * this.count(Hoistway.STOP_UPGRADE.get());
+        return this.isCreative() ? Integer.MAX_VALUE : BASE_STOPS + STOPS_PER_UPGRADE * this.count(Hoistway.STOP_UPGRADE.get());
     }
 
     @Override
     public void setChanged() {
         super.setChanged();
         if (this.level != null && !this.level.isClientSide) {
-            this.lastScan = Long.MIN_VALUE;
+            this.stopsDirty = true;
             this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 2);
         }
     }
 
-    // ---- Stops and calls ----
+    // ---- Stops ----
 
     /** Floor heights the car may stop at, lowest first. */
     public List<Integer> getStops() {
-        if (this.level != null && this.level.getGameTime() - this.lastScan > 10L) {
+        if (this.level != null && (this.stopsDirty || this.level.getGameTime() - this.lastScan > 10L)) {
             this.scan();
         }
         return this.stops;
+    }
+
+    /** Floors are numbered from the lowest stop, which is floor 1. Returns 0 for a height that is not a stop. */
+    public int floorNumber(int floorY) {
+        return this.getStops().indexOf(floorY) + 1;
     }
 
     private void scan() {
@@ -119,6 +136,7 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
             return;
         }
         this.lastScan = this.level.getGameTime();
+        this.stopsDirty = false;
 
         int top = this.worldPosition.getY() - 3;
         int bottom = Math.max(top - this.getCableLength(), this.level.getMinBuildHeight());
@@ -153,50 +171,59 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
             this.buttons.put(entry.getKey(), entry.getValue());
         }
         Collections.sort(this.stops);
+
+        // A floor that stopped being a stop cannot stay requested.
+        this.requests.removeIf(floor -> !this.stops.contains(floor));
     }
 
-    /** A call button was pressed. */
+    // ---- Requests ----
+
+    /** A call button outside the shaft was pressed. */
     public void call(BlockPos buttonPos, @Nullable Player player) {
         if (this.level == null) {
             return;
         }
         this.scan();
         int floor = CallButtonBlock.floorLevel(this.level, buttonPos);
-        if (!this.stops.contains(floor)) {
-            if (player != null) {
-                int top = this.worldPosition.getY() - 3;
-                String key = floor > top ? "hoistway.call.too_high"
-                        : floor < top - this.getCableLength() ? "hoistway.call.no_cable"
-                        : "hoistway.call.too_many_stops";
-                player.displayClientMessage(Component.translatable(key), true);
-            }
-            return;
+        if (!this.request(floor) && player != null) {
+            int top = this.worldPosition.getY() - 3;
+            String key = floor > top ? "hoistway.call.too_high"
+                    : floor < top - this.getCableLength() ? "hoistway.call.no_cable"
+                    : "hoistway.call.too_many_stops";
+            player.displayClientMessage(Component.translatable(key), true);
         }
-        if (!this.calls.contains(floor)) {
-            this.calls.add(floor);
+    }
+
+    /** Asks the car to visit {@code floor}. Returns false if the floor is not a stop. */
+    public boolean request(int floor) {
+        if (!this.getStops().contains(floor)) {
+            return false;
+        }
+        if (this.requests.add(floor)) {
             super.setChanged();
         }
         this.setLit(floor, true);
+        return true;
     }
 
-    /** The oldest call that can still be served. */
-    public OptionalInt peekCall() {
-        while (!this.calls.isEmpty()) {
-            int floor = this.calls.getInt(0);
-            if (this.getStops().contains(floor)) {
-                return OptionalInt.of(floor);
-            }
-            this.calls.removeInt(0);
-        }
-        return OptionalInt.empty();
+    /** Floors the car still has to visit, lowest first. */
+    public IntSortedSet getRequests() {
+        return this.requests;
     }
 
-    /** The car reached (or gave up on) a floor. */
-    public void finishCall(int floor) {
-        if (this.calls.rem(floor)) {
+    /** The car has stopped at {@code floor}. */
+    public void clearRequest(int floor) {
+        if (this.requests.remove(floor)) {
             super.setChanged();
         }
         this.setLit(floor, false);
+    }
+
+    /** Drops every request, for when the car is stopped by something in the shaft. */
+    public void clearRequests() {
+        for (int floor : this.requests.toIntArray()) {
+            this.clearRequest(floor);
+        }
     }
 
     private void setLit(int floor, boolean lit) {
@@ -289,7 +316,7 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
-        tag.putInt("CableLength", this.count(Hoistway.CABLE.get()));
+        tag.putInt("CableLength", this.getCableLength());
         return tag;
     }
 
@@ -300,9 +327,9 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
         super.loadAdditional(tag, registries);
         this.items = NonNullList.withSize(SLOTS, ItemStack.EMPTY);
         ContainerHelper.loadAllItems(tag, this.items, registries);
-        this.calls.clear();
-        for (int floor : tag.getIntArray("Calls")) {
-            this.calls.add(floor);
+        this.requests.clear();
+        for (int floor : tag.getIntArray("Requests")) {
+            this.requests.add(floor);
         }
         if (tag.contains("CableLength")) {
             this.clientCableLength = tag.getInt("CableLength");
@@ -313,7 +340,7 @@ public class MotorBlockEntity extends BaseContainerBlockEntity {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         ContainerHelper.saveAllItems(tag, this.items, registries);
-        tag.putIntArray("Calls", this.calls.toIntArray());
+        tag.putIntArray("Requests", this.requests.toIntArray());
     }
 
     @Override

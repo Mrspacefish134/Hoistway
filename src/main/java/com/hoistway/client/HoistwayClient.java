@@ -17,6 +17,7 @@ public class HoistwayClient {
         modBus.addListener(HoistwayClient::registerModels);
         modBus.addListener(HoistwayClient::registerScreens);
         NeoForge.EVENT_BUS.addListener(ClientHooks::onClientTick);
+        NeoForge.EVENT_BUS.addListener(ClientHooks::onInteract);
     }
 
     private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {

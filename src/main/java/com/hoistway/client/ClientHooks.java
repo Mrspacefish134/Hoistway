@@ -1,22 +1,84 @@
 package com.hoistway.client;
 
+import javax.annotation.Nullable;
+
+import com.hoistway.CallButtonBlock;
 import com.hoistway.CarStepPayload;
 import com.hoistway.ElevatorCarEntity;
+import com.hoistway.PanelPayloads;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-/** Client-only pieces of the elevator: carrying the local player and reading the ride controls. */
+/** Client-only pieces of the elevator: carrying the local player, the ride controls and the music. */
 public final class ClientHooks {
     private static int ridingCarId = -1;
     private static long ridingTick = Long.MIN_VALUE;
     private static boolean jumpWasDown;
     private static boolean sneakWasDown;
+    @Nullable
+    private static ElevatorMusic music;
 
     private ClientHooks() {
+    }
+
+    /** The car the local player is standing in, if any. */
+    @Nullable
+    public static ElevatorCarEntity ridingCar() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || minecraft.level.getGameTime() - ridingTick > 2L) {
+            return null;
+        }
+        return minecraft.level.getEntity(ridingCarId) instanceof ElevatorCarEntity car ? car : null;
+    }
+
+    /** Asks the server for the floor panel of the car the player is standing in. */
+    public static boolean requestPanel() {
+        ElevatorCarEntity car = ridingCar();
+        if (car == null) {
+            return false;
+        }
+        PacketDistributor.sendToServer(new PanelPayloads.Open(car.getId()));
+        return true;
+    }
+
+    public static void openPanel(PanelPayloads.Contents contents) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen == null && ridingCar() != null) {
+            minecraft.setScreen(new CarPanelScreen(contents));
+        }
+    }
+
+    /** Right-click with an empty hand while standing in the car opens its floor panel. */
+    static void onInteract(InputEvent.InteractionKeyMappingTriggered event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        if (!event.isUseItem() || player == null || !player.getMainHandItem().isEmpty() || ridingCar() == null) {
+            return;
+        }
+        HitResult hit = minecraft.hitResult;
+        if (hit instanceof BlockHitResult blockHit && hit.getType() == HitResult.Type.BLOCK
+                && minecraft.level.getBlockState(blockHit.getBlockPos()).getBlock() instanceof CallButtonBlock) {
+            return;
+        }
+        if (hit instanceof EntityHitResult entityHit) {
+            Entity target = entityHit.getEntity();
+            if (!(target instanceof ElevatorCarEntity)) {
+                return;
+            }
+        }
+        if (requestPanel()) {
+            event.setCanceled(true);
+            event.setSwingHand(false);
+        }
     }
 
     static void onClientTick(ClientTickEvent.Post event) {
@@ -50,6 +112,23 @@ public final class ClientHooks {
         }
         jumpWasDown = jump;
         sneakWasDown = sneak;
+
+        // Elevator music: starts when you step into a car, fades out when you step off.
+        ElevatorCarEntity car = ridingCar();
+        if (music != null && music.isStopped()) {
+            music = null;
+        }
+        if (car != null && (music == null || music.car() != car)) {
+            if (music != null) {
+                music.fadeOut();
+            }
+            music = new ElevatorMusic(car);
+            minecraft.getSoundManager().play(music);
+        }
+    }
+
+    static boolean isRiding(ElevatorCarEntity car) {
+        return ridingCar() == car;
     }
 
     /**

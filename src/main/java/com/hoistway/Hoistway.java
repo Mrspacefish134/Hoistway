@@ -33,6 +33,10 @@ public class Hoistway {
     public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(Registries.ENTITY_TYPE, MODID);
     public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(Registries.MENU, MODID);
     public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
+    public static final DeferredRegister<net.minecraft.sounds.SoundEvent> SOUNDS = DeferredRegister.create(Registries.SOUND_EVENT, MODID);
+
+    public static final DeferredHolder<net.minecraft.sounds.SoundEvent, net.minecraft.sounds.SoundEvent> ELEVATOR_MUSIC =
+            SOUNDS.register("elevator_music", () -> net.minecraft.sounds.SoundEvent.createVariableRangeEvent(id("elevator_music")));
 
     // ---- Blocks ----
 
@@ -71,6 +75,9 @@ public class Hoistway {
     public static final DeferredItem<Item> CABLE = ITEMS.registerSimpleItem("cable");
     public static final DeferredItem<Item> SPEED_UPGRADE = ITEMS.registerSimpleItem("speed_upgrade", new Item.Properties().stacksTo(1));
     public static final DeferredItem<Item> STOP_UPGRADE = ITEMS.registerSimpleItem("stop_upgrade", new Item.Properties().stacksTo(1));
+    /** Creative only: unlimited stops and unlimited travel, no cable needed. */
+    public static final DeferredItem<Item> CREATIVE_UPGRADE = ITEMS.registerSimpleItem("creative_upgrade",
+            new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.EPIC));
 
     public static final DeferredItem<ElevatorCarItem> ELEVATOR_CAR = ITEMS.registerItem("elevator_car",
             props -> new ElevatorCarItem(props, 1), new Item.Properties().stacksTo(1));
@@ -108,6 +115,7 @@ public class Hoistway {
                         out.accept(CALL_BUTTON_ITEM.get());
                         out.accept(SPEED_UPGRADE.get());
                         out.accept(STOP_UPGRADE.get());
+                        out.accept(CREATIVE_UPGRADE.get());
                         out.accept(ESCALATOR_ITEM.get());
                     })
                     .build());
@@ -119,11 +127,16 @@ public class Hoistway {
         ENTITIES.register(modBus);
         MENUS.register(modBus);
         TABS.register(modBus);
+        SOUNDS.register(modBus);
         modBus.addListener(Hoistway::registerPayloads);
     }
 
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        event.registrar("1").playToServer(CarStepPayload.TYPE, CarStepPayload.STREAM_CODEC, CarStepPayload::handle);
+        var registrar = event.registrar("1");
+        registrar.playToServer(CarStepPayload.TYPE, CarStepPayload.STREAM_CODEC, CarStepPayload::handle);
+        registrar.playToServer(PanelPayloads.Open.TYPE, PanelPayloads.Open.STREAM_CODEC, PanelPayloads.Open::handle);
+        registrar.playToServer(PanelPayloads.Select.TYPE, PanelPayloads.Select.STREAM_CODEC, PanelPayloads.Select::handle);
+        registrar.playToClient(PanelPayloads.Contents.TYPE, PanelPayloads.Contents.STREAM_CODEC, PanelPayloads.Contents::handle);
     }
 
     public static ResourceLocation id(String path) {

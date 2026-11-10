@@ -57,16 +57,20 @@ def model(textures, elements, parent=None, display=None):
 
 def motor_models():
     frame, casing = "#frame", "#casing"
+    # Both broad faces of a bracket show the bearing.
+    bracket = every(frame)
+    bracket["west"] = face("#bracket", [3, 2, 13, 14])
+    bracket["east"] = face("#bracket", [3, 2, 13, 14])
     housing = [
         element([0, 0, 0], [16, 2, 16], every(frame)),      # bed plate
-        element([0, 2, 3], [2, 14, 13], every(frame)),      # bearing brackets
-        element([14, 2, 3], [16, 14, 13], every(frame)),
+        element([0, 2, 3], [2, 14, 13], bracket),           # bearing brackets
+        element([14, 2, 3], [16, 14, 13], bracket),
         element([0, 14, 6], [16, 16, 10], every(frame)),    # tie beam
         element([3, 2, 13], [13, 9, 16], every(casing)),    # electric motor
     ]
     write(ASSETS / "models/block/elevator_motor.json", model(
-        {"frame": "hoistway:block/motor_frame", "casing": "hoistway:block/motor_casing",
-         "particle": "hoistway:block/motor_frame"},
+        {"frame": "hoistway:block/motor_frame", "bracket": "hoistway:block/motor_bracket",
+         "casing": "hoistway:block/motor_casing", "particle": "hoistway:block/motor_frame"},
         housing, parent="minecraft:block/block"))
 
     # The drum is drawn spinning by the block entity renderer. Two square sections a
@@ -217,24 +221,27 @@ def car_model(size):
     parts = []
     for x in range(low, high, 16):
         for z in range(low, high, 16):
-            rim = {}
-            if z == low:
-                rim["north"] = face("#frame", [0, 0, 16, 3])
-            if z + 16 == high:
-                rim["south"] = face("#frame", [0, 0, 16, 3])
-            if x == low:
-                rim["west"] = face("#frame", [0, 0, 16, 3])
-            if x + 16 == high:
-                rim["east"] = face("#frame", [0, 0, 16, 3])
+            outer = [side for side, on_edge in (("north", z == low), ("south", z + 16 == high),
+                                                ("west", x == low), ("east", x + 16 == high)) if on_edge]
+            sill = {side: face("#trim", [0, 0, 16, 3]) for side in outer}      # hazard-striped floor edge
+            fascia = {side: face("#trim", [0, 4, 16, 7]) for side in outer}    # roof edge
             parts.append(element([x, -16, z], [x + 16, -13, z + 16],
-                                 {"up": face("#floor", [0, 0, 16, 16]), "down": face("#frame", [0, 0, 16, 16]), **rim}))
+                                 {"up": face("#floor", [0, 0, 16, 16]), "down": face("#frame", [0, 0, 16, 16]), **sill}))
             parts.append(element([x, 25, z], [x + 16, 28, z + 16],
-                                 {"up": face("#roof", [0, 0, 16, 16]), "down": face("#ceiling", [0, 0, 16, 16]), **rim}))
+                                 {"up": face("#roof", [0, 0, 16, 16]), "down": face("#ceiling", [0, 0, 16, 16]), **fascia}))
     for x in (low, high - 2):
         for z in (low, high - 2):
             for y1, y2 in ((-13, 3), (3, 19), (19, 25)):
                 parts.append(element([x, y1, z], [x + 2, y2, z + 2],
                                      {side: face("#frame", [0, 0, 2, y2 - y1]) for side in SIDES}))
+    # Floor panel on the inside of the north side, beside the north-east post.
+    panel_edge = face("#panel", [4, 2, 5, 14])
+    parts.append(element([high - 8, 4, low], [high - 3, 12, low + 0.5], {
+        "south": face("#panel", [4, 2, 12, 14]),
+        "north": face("#frame", [0, 0, 5, 8]),
+        "west": panel_edge, "east": panel_edge,
+        "up": face("#panel", [4, 2, 12, 3]), "down": face("#panel", [4, 13, 12, 14]),
+    }))
     # Crosshead: where the hoist cables are made fast.
     crosshead = {side: face("#frame", [0, 0, 6, 2]) for side in SIDES}
     crosshead["up"] = face("#frame", [0, 0, 6, 6])
@@ -242,8 +249,10 @@ def car_model(size):
     return model({
         "floor": "hoistway:block/car_floor",
         "frame": "hoistway:block/car_frame",
+        "trim": "hoistway:block/car_trim",
         "roof": "hoistway:block/car_roof",
         "ceiling": "hoistway:block/car_ceiling",
+        "panel": "hoistway:block/call_button",
         "particle": "hoistway:block/car_frame",
     }, parts)
 
@@ -256,7 +265,7 @@ def car_models():
 # ------------------------------------------------------------------ items, lang
 
 def item_models():
-    for name in ("cable", "speed_upgrade", "stop_upgrade", "elevator_car", "large_elevator_car"):
+    for name in ("cable", "speed_upgrade", "stop_upgrade", "creative_upgrade", "elevator_car", "large_elevator_car"):
         write(ASSETS / f"models/item/{name}.json",
               {"parent": "minecraft:item/generated", "textures": {"layer0": f"hoistway:item/{name}"}})
 
@@ -270,6 +279,11 @@ def lang():
         "item.hoistway.cable": "Hoist Cable",
         "item.hoistway.speed_upgrade": "Speed Upgrade",
         "item.hoistway.stop_upgrade": "Stop Upgrade",
+        "item.hoistway.creative_upgrade": "Creative Elevator Upgrade",
+        "hoistway.car.floor": "Floor %s",
+        "hoistway.panel.title": "Elevator",
+        "hoistway.car.passing_up": "▲ %s",
+        "hoistway.car.passing_down": "▼ %s",
         "item.hoistway.elevator_car": "Elevator Car",
         "item.hoistway.large_elevator_car": "Large Elevator Car",
         "entity.hoistway.elevator_car": "Elevator Car",

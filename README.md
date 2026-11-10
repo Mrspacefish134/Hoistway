@@ -6,6 +6,9 @@ The elevator is a real moving car, not a teleporter: it hangs from a winch on tw
 accelerates and brakes, carries everything standing on it, and stops at the floors you mark
 with call buttons.
 
+**[Watch the demo video](docs/hoistway-demo.mp4)** (1 min 47 s): the cable system, the floor
+panel, picking up a passenger on the way, and escalators.
+
 ## Building an elevator
 
 1. **Dig a shaft.** 1×1 for the Elevator Car, 3×3 for the Large Elevator Car.
@@ -22,9 +25,19 @@ with call buttons.
 | Action | Result |
 | --- | --- |
 | Press a Call Button | Calls the car to that floor. The button stays lit until it arrives. |
-| Jump while standing in the car | Go up one stop. Press again while moving to go one further. |
+| Right-click with an empty hand while standing in the car | Opens the floor panel. Press a floor to go there. |
+| Jump while standing in the car | Go up one stop. |
 | Sneak while standing in the car | Go down one stop. |
 | Punch the car while it is parked | Picks it back up. |
+
+Floors are numbered from the lowest stop, which is floor 1. The car announces each floor it
+passes and the floor it stops at.
+
+The car works like a real collective elevator: it keeps travelling in one direction, stopping
+at every floor someone asked for on the way, then turns round. If someone presses a Call Button
+on a floor the car is about to pass, it stops there to pick them up.
+
+Bossa nova plays while you ride.
 
 The car waits if something is underneath it and stops if the shaft is blocked.
 
@@ -37,6 +50,7 @@ The motor has five slots, shared between cable and upgrades.
 | Hoist Cable | +1 block of travel each (up to 64 per slot) |
 | Speed Upgrade | +1.6 blocks per second each (base speed is 2.4) |
 | Stop Upgrade | +2 stops each (base is 3 stops) |
+| Creative Elevator Upgrade | Unlimited stops and unlimited travel, no cable needed. Creative menu only. |
 
 If there are more buttoned floors than the motor has stops, the floors nearest the motor are
 served.
@@ -73,6 +87,15 @@ The jar is written to `build/libs`.
 Textures are drawn as pixel grids in `tools/make_textures.py`, and the models, recipes and
 other JSON come from `tools/make_data.py`. Run either script with Python 3 after editing it.
 
+The demo video is recorded by a separate dev-only mod in `src/demo`, which is never part of the
+released jar. `./gradlew runDemo` opens a client that builds a showcase world, plays a scripted
+walkthrough and streams the frames to ffmpeg, then closes itself. `tools/finish_demo.py` adds
+the music and game sounds.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+The elevator music is "Two Left Socks" and "Which Brand Of Mustard Shall I Buy" by
+congusbongus, released into the public domain (CC0) on
+[OpenGameArt](https://opengameart.org/content/two-left-socks).

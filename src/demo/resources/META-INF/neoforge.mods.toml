@@ -1,0 +1,16 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="MIT"
+
+[[mods]]
+modId="hoistwaydemo"
+version="1.0.0"
+displayName="Hoistway Demo Recorder"
+description='''Dev-only: builds a showcase world, runs a scripted walkthrough and records it.'''
+
+[[dependencies.hoistwaydemo]]
+    modId="hoistway"
+    type="required"
+    versionRange="*"
+    ordering="AFTER"
+    side="CLIENT"

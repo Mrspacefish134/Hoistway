@@ -3,6 +3,7 @@
   "ambientocclusion": false,
   "textures": {
     "frame": "hoistway:block/motor_frame",
+    "bracket": "hoistway:block/motor_bracket",
     "casing": "hoistway:block/motor_casing",
     "particle": "hoistway:block/motor_frame"
   },
@@ -58,10 +59,22 @@
           "texture": "#frame"
         },
         "west": {
-          "texture": "#frame"
+          "texture": "#bracket",
+          "uv": [
+            3,
+            2,
+            13,
+            14
+          ]
         },
         "east": {
-          "texture": "#frame"
+          "texture": "#bracket",
+          "uv": [
+            3,
+            2,
+            13,
+            14
+          ]
         },
         "up": {
           "texture": "#frame"
@@ -90,10 +103,22 @@
           "texture": "#frame"
         },
         "west": {
-          "texture": "#frame"
+          "texture": "#bracket",
+          "uv": [
+            3,
+            2,
+            13,
+            14
+          ]
         },
         "east": {
-          "texture": "#frame"
+          "texture": "#bracket",
+          "uv": [
+            3,
+            2,
+            13,
+            14
+          ]
         },
         "up": {
           "texture": "#frame"

@@ -154,6 +154,11 @@ public class EscalatorBlock extends BaseEntityBlock {
     protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
         super.onPlace(state, level, pos, oldState, movedByPiston);
         if (!oldState.is(this)) {
+            // Blocks placed by commands or structures skip getStateForPlacement, so fix our own ends too.
+            BlockState fixed = this.withEnds(level, pos, state);
+            if (fixed != state) {
+                level.setBlock(pos, fixed, 2);
+            }
             this.refreshNeighbors(level, pos, state.getValue(FACING));
         }
     }
