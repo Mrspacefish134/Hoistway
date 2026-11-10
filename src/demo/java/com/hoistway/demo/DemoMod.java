@@ -57,7 +57,13 @@ public class DemoMod {
         NeoForge.EVENT_BUS.addListener(DemoMod::onSound);
         // A clean picture: no hand or name tag in the free camera, no crosshair at all.
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.RenderHandEvent event) -> {
-            if (Minecraft.getInstance().getCameraEntity() != Minecraft.getInstance().player) {
+            if (Director.bareView || Minecraft.getInstance().getCameraEntity() != Minecraft.getInstance().player) {
+                event.setCanceled(true);
+            }
+        });
+        // In scenes that ask for it, the player is never drawn and the hotbar is hidden.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.RenderPlayerEvent.Pre event) -> {
+            if (Director.bareView && event.getEntity() == Minecraft.getInstance().player) {
                 event.setCanceled(true);
             }
         });
@@ -67,7 +73,11 @@ public class DemoMod {
             }
         });
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.RenderGuiLayerEvent.Pre event) -> {
-            if (event.getName().equals(net.neoforged.neoforge.client.gui.VanillaGuiLayers.CROSSHAIR)) {
+            var name = event.getName();
+            if (name.equals(net.neoforged.neoforge.client.gui.VanillaGuiLayers.CROSSHAIR)
+                    || Director.bareView && (name.equals(net.neoforged.neoforge.client.gui.VanillaGuiLayers.HOTBAR)
+                            || name.equals(net.neoforged.neoforge.client.gui.VanillaGuiLayers.EXPERIENCE_LEVEL)
+                            || name.equals(net.neoforged.neoforge.client.gui.VanillaGuiLayers.SELECTED_ITEM_NAME))) {
                 event.setCanceled(true);
             }
         });

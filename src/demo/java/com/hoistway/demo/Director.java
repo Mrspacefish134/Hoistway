@@ -1,5 +1,7 @@
 package com.hoistway.demo;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -10,6 +12,7 @@ import javax.annotation.Nullable;
 
 import org.lwjgl.glfw.GLFW;
 
+import com.hoistway.CabinStyle;
 import com.hoistway.ElevatorCarEntity;
 import com.hoistway.Hoistway;
 import com.hoistway.MotorBlockEntity;
@@ -54,6 +57,8 @@ public final class Director implements Runnable {
     static volatile double walkSpeed = 0.16;
     @Nullable
     static volatile Recorder recorder;
+    /** Hide the player, their hand and the hotbar entirely. */
+    static volatile boolean bareView;
 
     private final Path output;
     @Nullable
@@ -212,6 +217,10 @@ public final class Director implements Runnable {
     private void perform() {
         waitUntil(() -> mc().player != null && mc().level != null && serverInstance() != null, 2400);
         waitTicks(20);
+        if (scene().equals("doors")) {
+            this.performDoors();
+            return;
+        }
 
         server(level -> {
             level.setDayTime(6000);
@@ -406,6 +415,123 @@ public final class Director implements Runnable {
         shot(Camera.orbit(new Vec3(5.5, -52, 2.5), 24, -45, 60, 100, 160));
         titleCard("Hoistway", "Free and open source: github.com/Mrspacefish134/Hoistway");
         waitTicks(160);
+    }
+
+    /** Which script to run: the first word of run-demo/scene.txt, or the full walkthrough without it. */
+    private static String scene() {
+        Path file = mc().gameDirectory.toPath().resolve("scene.txt");
+        try {
+            return Files.exists(file) ? Files.readString(file).trim() : "";
+        } catch (IOException e) {
+            return "";
+        }
+    }
+
+    private static void setTickRate(float rate) {
+        server(level -> level.getServer().tickRateManager().setTickRate(rate));
+    }
+
+    private static void setCabin(CabinStyle style) {
+        server(level -> {
+            ElevatorCarEntity car = level.getEntitiesOfClass(ElevatorCarEntity.class,
+                    new net.minecraft.world.phys.AABB(-3, -64, -3, 4, -30, 4)).get(0);
+            car.setStyle(style);
+            car.setDoorSide(Direction.SOUTH);
+        });
+    }
+
+    private static void sendCarTo(int floor) {
+        server(level -> motor(level).request(Stage.FLOORS[floor - 1]));
+    }
+
+    /** Waits for the car to be parked at floor 1 with its doors fully open. */
+    private static void waitForOpenAtGround() {
+        waitUntil(() -> parkedAt(1), 400);
+        waitUntil(() -> car() != null && car().getDoorOpen(1.0F) >= 1.0F, 100);
+    }
+
+    /** A short film of the cabin doors on both kits, at full speed, in slow motion and from inside. */
+    private void performDoors() {
+        bareView = true;
+        server(level -> {
+            level.setDayTime(6000);
+            Stage.build(level, true);
+            motor(level).setItem(0, new ItemStack(Hoistway.CABLE.get(), 64));
+            motor(level).setItem(1, new ItemStack(Hoistway.STOP_UPGRADE.get()));
+            Stage.placeCar(level);
+            ServerPlayer player = serverPlayer(level);
+            player.getInventory().clearContent();
+            player.teleportTo(level, 0.5, -60, 12.5, 180, 0);
+        });
+        setCabin(CabinStyle.RETRO);
+        client(() -> {
+            mc().gui.getChat().clearMessages(false);
+            mc().getToasts().clear();
+            mc().options.pauseOnLostFocus = false;
+        });
+        Vec3 landing = new Vec3(0.5, -58.35, 7.2);
+        Vec3 doorway = new Vec3(0.5, -58.9, 1.6);
+        Vec3 near = new Vec3(0.5, -58.6, 4.6);
+        shot(Camera.fixed(landing, doorway));
+        waitTicks(80);
+
+        recorder = clientGet(() -> Recorder.start(this.output, Recorder.findFfmpeg().getPath()));
+        titleCard("Cabin doors", "Retro and Corporate Cabin Kits");
+        waitTicks(70);
+        titleCard(null, null);
+
+        for (CabinStyle style : new CabinStyle[] {CabinStyle.RETRO, CabinStyle.CORPORATE}) {
+            String name = style == CabinStyle.RETRO ? "Retro Cabin Kit" : "Corporate Cabin Kit";
+            shot(Camera.fixed(landing, doorway));
+            if (style == CabinStyle.CORPORATE) {
+                say(null);
+                setCabin(style);
+                waitTicks(20);
+            }
+
+            // From the landing, at full speed: the doors close, then the car leaves.
+            say(name);
+            waitTicks(45);
+            say(name + ": the doors close, then the car leaves");
+            sendCarTo(2);
+            waitTicks(75);
+            say(name + ": back down, the chime, then the doors open");
+            sendCarTo(1);
+            waitForOpenAtGround();
+            waitTicks(25);
+
+            // Closer, at a quarter speed.
+            shot(Camera.fixed(near, doorway));
+            say(name + ": the same close at quarter speed");
+            waitTicks(20);
+            setTickRate(5.0F);
+            sendCarTo(2);
+            waitTicks(32);
+            setTickRate(20.0F);
+            sendCarTo(1);
+            waitForOpenAtGround();
+            waitTicks(15);
+
+            // From inside, riding up.
+            server(level -> serverPlayer(level).teleportTo(level, 0.5, -60 + ElevatorCarEntity.FLOOR_HEIGHT, -0.4, 0, 6));
+            waitTicks(4);
+            shot(Camera.firstPerson(0, 6, 0, 6, 1));
+            say(name + ": from inside");
+            waitTicks(35);
+            sendCarTo(2);
+            waitUntil(() -> parkedAt(2), 300);
+            waitTicks(45);
+            sendCarTo(1);
+            waitForOpenAtGround();
+            waitTicks(10);
+            shot(Camera.fixed(landing, doorway));
+            server(level -> serverPlayer(level).teleportTo(level, 0.5, -60, 12.5, 180, 0));
+            waitTicks(4);
+        }
+        say(null);
+        shot(Camera.fixed(landing, doorway));
+        titleCard("Hoistway", "github.com/Mrspacefish134/Hoistway");
+        waitTicks(70);
     }
 
     /** Highlights a floor button on the open panel, the way it looks under the mouse. */

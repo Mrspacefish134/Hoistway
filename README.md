@@ -116,7 +116,8 @@ The arrival chime is synthesized by `tools/make_chime.py` (needs ffmpeg).
 The demo video is recorded by a separate dev-only mod in `src/demo`, which is never part of the
 released jar. `./gradlew runDemo` opens a client that builds a showcase world, plays a scripted
 walkthrough and streams the frames to ffmpeg, then closes itself. `tools/finish_demo.py` adds
-the music and game sounds.
+the music and game sounds. Put the word `doors` in `run-demo/scene.txt` to record a short film
+of the cabin doors instead.
 
 ## License
 
