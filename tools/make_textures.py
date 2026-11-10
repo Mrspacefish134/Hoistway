@@ -43,6 +43,8 @@ PALETTE = {
     "S": "4E3420", "W": "76522F", "X": "9C7444", "o": "C29766",
     # vanilla's empty slot outlines
     "%": "555555",
+    # smoked glass
+    "<": "10161F", ">": "18222E", "^": "26374A", "~": "3A5670",
 }
 
 T = {}
@@ -148,61 +150,64 @@ T["block/car_shell"] = (["2222222222222222"] + ([SHELL] * 3 + [SHELL_RIVET] + [S
                         + [SHELL] * 10 + ["1111111111111111"])
 
 # 1970s: walnut boards between a brass crown and chair rail, darker boards below, brass kick plate.
+# Each board is seven pixels: a lit left edge, five of grain, a shaded right edge. The grain runs
+# straight down the board in long streaks that step sideways now and then; board A has a knot.
 RETRO_BOARD_A = [
-    "ddcdded", "dcddded", "dcdddcd", "ddcddcd", "dddcdcd", "ddddcdd", "dddcddd", "ddcddde",
-    "dcdddde", "dcddded", "cdddded", "cdddedd", "dcddedd", "ddcdedd", "dddcded", "ddddcde",
-    "ddddcde", "dddcdde", "ddcddde", "dcdddcd", "dcddcdd", "ddcdcdd", "dddccdd", "ddddcdd",
+    "edcdddc", "edcdddc", "edcdddc", "edcdddc", "edcdcdc", "edcdcdc", "ddcdcdc", "edcdcdc",
+    "edcdcdc", "edcdcdc", "eddccdc", "eddccdc", "eddcddc", "edcdccc", "edcdbac", "edcdccc",
+    "eddcddc", "edcdddc", "edcdddc", "ddcdddc", "edcdddc", "edcdddc", "edcdddc",
 ]
 RETRO_BOARD_B = [
-    "edcdddd", "edcdddd", "dedcddd", "ddedcdd", "dddecdd", "dddedcd", "ddeddcd", "dedddcd",
-    "eddddcd", "edddcdd", "dedcddd", "ddcdddd", "dcddddd", "cdddddd", "cdddcdd", "dcddcdd",
-    "ddcdcdd", "dddccdd", "ddddcdd", "dddcddd", "ddcdded", "dcddedd", "cdddedd", "cddeddd",
+    "edddcdc", "edddcdc", "ededcdc", "ededcdc", "ededcdc", "ededcdc", "ededcdc", "edecddc",
+    "edecddc", "eddcddc", "eddcddc", "dddcddc", "eddcddc", "eddcddc", "eddcddc", "eddcddc",
+    "edcdddc", "edcdddc", "edcdddc", "ddcdddc", "edcdddc", "edcdddc", "edcdddc",
 ]
 T["block/car_wall_retro"] = [
     "aaaaaaaaaaaaaaaa",
-    "DEEEEEEEEEEEEEED",
-    "BCCCCCCCCCCCCCCB",
-] + ["a" + RETRO_BOARD_A[i] + "a" + RETRO_BOARD_B[i] for i in range(24)] + [
+    "EEEEEEEEEEEEEEEE",
+    "CCCCCCCCCCCCCCCC",
+    "abbbbbbbabbbbbbb",      # the crown's shadow on the boards
+] + ["a" + RETRO_BOARD_A[i] + "a" + RETRO_BOARD_B[i] for i in range(23)] + [
+    "EEEEEEEEEEEEEEEE",      # chair rail, with a stud on each board
+    "DDDDBDDDDDDDBDDD",
+    "CCCCCCCCCCCCCCCC",
+    "aaaaaaaaaaaaaaaa",
+    "acbcbbbbacbbbcbb",      # darker wainscot
+    "acbcbbbbacbbbcbb",
+    "acbbcbbbacbbcbbb",
+    "acbbcbbbacbbcbbb",
+    "acbbcbbbacbbcbbb",
+    "CCCCCCCCCCCCCCCC",      # kick plate
     "BBBBBBBBBBBBBBBB",
-    "DEEEEEEEEEEEEEED",
-    "BCCCCCCCCCCCCCCB",
-    "AAAAAAAAAAAAAAAA",
-    "acbcccbcaccbcccb",
-    "acbccbccacbccbcc",
-    "accbcbccacbcccbc",
-    "acccbbccaccbccbc",
-    "acccbcccacccbccc",
-    "BBBBBBBBBBBBBBBB",
-    "AAAAAAAAAAAAAAAA",
 ] + ["aaaaaaaaaaaaaaaa"] * 10
 
-# Orange shag carpet.
+# Orange carpet. Every tuft is a lit pixel with its shadow directly underneath.
 T["block/car_floor_retro"] = [
-    "HFHOFHfFHHOFHFfH",
-    "FHfHHFHOFHFHHfHF",
-    "OHFHfHFHHFHfHOFH",
-    "HFHHOFHfFHOHFHHF",
-    "fHOFHHFHOHFHfHFO",
-    "HFHfHOHFHfHFHOHF",
-    "FHOHFHfHOHFHHFHf",
-    "HfHFHOFHHFHOfHFH",
-    "OHFHHfHFHOHFHFHO",
-    "HFOHfHFHFHfHOHFH",
-    "FHHFHOHfHHOHFHfF",
-    "HOfHFHFHOFHFHHOH",
-    "FHHOHfHFHHfHOHFH",
-    "HFHFHOHHfHOHFHHO",
-    "fHOHFHFOHFHHfHFH",
-    "HFHfHOHFHHOFHOHF",
+    "HHOHHHHHFHHHOHFH",
+    "HHFHHOHHHHHHFHHO",
+    "FHHHHFHHHOHHHHHF",
+    "HHHOHHHHHFHHHOHH",
+    "OHHFHHHOHHHHHFHH",
+    "FHHHHHHFHHOHHHHH",
+    "HHHHOHHHHHFHHHOH",
+    "HOHHFHHHOHHHHHFH",
+    "HFHHHHHHFHHHOHHH",
+    "HHHHHOHHHHHHFHHH",
+    "HHOHHFHHHHOHHHHO",
+    "HHFHHHHHOHFHHHHF",
+    "OHHHHHHHFHHHHOHH",
+    "FHHHOHHHHHHHHFHH",
+    "HHHHFHHOHHHOHHHH",
+    "HHHHHHHFHHHFHHOH",
 ]
 
-# A luminous egg-crate ceiling in a walnut surround.
-EGG_A = "bc9ZD9ZD9ZD9ZDcb"
-EGG_B = "bcZzDZzDZzDZzDcb"
-EGG_LINE = "bcDDDDDDDDDDDDcb"
-T["block/car_ceiling_retro"] = (["bbbbbbbbbbbbbbbb", "bccccccccccccccb"]
+# A luminous egg-crate ceiling in a bevelled walnut surround.
+EGG_A = "cb9ZD9ZD9ZD9ZDba"
+EGG_B = "cbZzDZzDZzDZzDba"
+EGG_LINE = "cbCCDCCDCCDCCDba"
+T["block/car_ceiling_retro"] = (["dccccccccccccccb", "cbbbbbbbbbbbbbba"]
                                 + [EGG_A, EGG_B, EGG_LINE] * 4
-                                + ["bccccccccccccccb", "bbbbbbbbbbbbbbbb"])
+                                + ["cbbbbbbbbbbbbbba", "baaaaaaaaaaaaaaa"])
 
 # Rows 0-2: brass sill and handrail. Rows 4-6: walnut fascia.
 T["block/car_trim_retro"] = [
@@ -217,16 +222,20 @@ T["block/car_trim_retro"] = [
 ] + ["cccccccccccccccc"] * 8
 
 # Brushed bronze leaf with an etched diamond motif.
-RETRO_DOOR = "SoXWXXWXWXXWXWXW"
+# From the top: a band of sheen, the recessed motif panel, then a plain kick plate.
+RETRO_DOOR = "SoXXWXXXXWXXXWXW"
+RETRO_SHEEN = "SooooWooooWoooXW"
 RETRO_MOTIF = [
     "XXXooXXX", "XXoWWoXX", "XoWXXWoX", "oWXooXWo", "XoWXXWoX", "XXoWWoXX", "XXXooXXX",
     "XXXooXXX", "XXoWWoXX", "XoWXXWoX", "oWXooXWo", "XoWXXWoX", "XXoWWoXX", "XXXooXXX",
 ]
-T["block/car_door_retro"] = (["SXXXXXXXXXXXXXXX"] + [RETRO_DOOR] * 7
+T["block/car_door_retro"] = (["SWWWWWWWWWWWWWWW", RETRO_DOOR, RETRO_DOOR, RETRO_SHEEN] + [RETRO_DOOR] * 4
                              + ["SoXWSSSSSSSSSSXW"]
                              + ["SoXWS" + row + "oXW" for row in RETRO_MOTIF]
                              + ["SoXWooooooooooXW"]
-                             + [RETRO_DOOR] * 7 + ["SSSSSSSSSSSSSSSS"])
+                             + [RETRO_DOOR] * 3
+                             + ["SSSSSSSSSSSSSSSS", "SoXXXXXXXXXXXXXW", "SoXXXXXXXXXXXXXW",
+                                "SWWWWWWWWWWWWWWW", "SSSSSSSSSSSSSSSS"])
 
 # Brass plate: red floor readout, round buttons, the alarm in red.
 def car_panel(rows):
@@ -246,68 +255,75 @@ T["block/car_panel_retro"] = car_panel([
 ])
 
 # Corporate: brushed steel panels with a reveal at handrail height.
-STEEL_A = "3788887777777776"
-STEEL_B = "3777766667777776"
-STEEL_C = "3777777777777776"
-STEEL_D = "3777777777666676"
+# Each panel is bevelled: lit along the top and left, shaded along the bottom and right, with a
+# few long brushing streaks, lighter and darker, across it.
+STEEL = "3877777777777775"
+STEEL_LIT = "3888888888888885"
+STEEL_SHADE = "3666666666666665"
+STEEL_DARK_L = "3876666666677775"
+STEEL_DARK_R = "3877776666666675"
+STEEL_PALE = "3878888888887775"
 T["block/car_wall_corporate"] = (
     ["1111111111111111", "2222222222222222"]
-    + [STEEL_A, STEEL_C, STEEL_B, STEEL_C, STEEL_C, STEEL_D, STEEL_C, STEEL_A, STEEL_C,
-       STEEL_C, STEEL_B, STEEL_C, STEEL_D, STEEL_C, STEEL_C, STEEL_A, STEEL_C, STEEL_B]
+    + [STEEL_LIT, STEEL, STEEL, STEEL_DARK_L, STEEL, STEEL, STEEL, STEEL, STEEL_PALE,
+       STEEL, STEEL, STEEL, STEEL_DARK_R, STEEL, STEEL, STEEL, STEEL, STEEL_SHADE]
     + ["4444444444444444", "2222222222222222"]
-    + [STEEL_C, STEEL_B, STEEL_C, STEEL_C, STEEL_D, STEEL_C, STEEL_A, STEEL_C, STEEL_C,
-       STEEL_B, STEEL_C, STEEL_D, STEEL_C, STEEL_C]
+    + [STEEL_LIT, STEEL, STEEL, STEEL_DARK_R, STEEL, STEEL, STEEL, STEEL_PALE, STEEL,
+       STEEL, STEEL_DARK_L, STEEL, STEEL, STEEL_SHADE]
     + ["3333333333333333", "1111111111111111"]
     + ["2222222222222222"] * 10)
 
-# Smoked glass back wall in a steel frame, with long diagonal reflections.
+# Smoked glass back wall in a steel frame: blue-black, lighter towards the top, with one broad
+# reflection and one thin one running down to the left.
 SMOKED = [
-    "KKKKKKKKKKKLlK", "KKKKKKKKKKLlKK", "KKKKKKKKKLlKKK", "KKKKKKKKLlKKKK", "KKKKKKKLlKKKKl",
-    "KKKKKKLlKKKKlK", "KKKKKLlKKKKlKK", "KKKKLlKKKKlKKK", "KKKLlKKKKlKKKK", "KKLlKKKKlKKKKK",
-    "KLlKKKKlKKKKKK", "LlKKKKlKKKKKKK", "lKKKKlKKKKKKKK", "KKKKlKKKKKKKKK", "KKKlKKKKKKKKKK",
-    "KKlKKKKKKKKKKK", "KlKKKKKKKKKKKK", "lKKKKKKKKKKKKK", "KKKKKKKKKKKKKK", "KKKKKKKKKKKKKK",
-    "KKKKKKKKKKKKKl", "KKKKKKKKKKKKlK", "KKKKKKKKKKKlKK", "KKKKKKKKKKlKKK", "KKKKKKKKKlKKKK",
-    "KKKKKKKKlKKKKK", "KKKKKKKlKKKKKK", "KKKKKKlKKKKKKK", "KKKKKlKKKKKKKK", "KKKKlKKKKKKKKK",
-    "KKKlKKKKKKKKKK", "KKKKKKKKKKKKKK", "KKKKKKKKKKKKKK", "kkkkkkkkkkkkkk",
+    ">>>>>>>>>>>>~^", ">>>>>>>>>>>~^>", ">>>>>>>>>>~^>>", ">>>>>>>>>~^>>>", ">>>>>>>>~^>>>>",
+    ">>>>>>>~^>>>>>", "<<<<<<~^<<<<<<", ">>>>>~^>>>>>>>", "<<<<~^<<<<<<<<", ">>>~^>>>>>>>>>",
+    "<<~^<<<<<<<<<<", "<~^<<<<<<<<<<<", "~^<<<<<<<<<<<<", "^<<<<<<<<<<<<<", "<<<<<<<<<<<<<<",
+    "<<<<<<<<<<<<<<", "<<<<<<<<<<<<<^", "<<<<<<<<<<<<^<", "<<<<<<<<<<<^<<", "<<<<<<<<<<^<<<",
+    "<<<<<<<<<^<<<<", "<<<<<<<<^<<<<<", "<<<<<<<^<<<<<<", "<<<<<<^<<<<<<<", "<<<<<^<<<<<<<<",
+    "<<<<^<<<<<<<<<", "<<<^<<<<<<<<<<", "<<^<<<<<<<<<<<", "<^<<<<<<<<<<<<", "^<<<<<<<<<<<<<",
+    "<<<<<<<<<<<<<<", "<<<<<<<<<<<<<<", "<<<<<<<<<<<<<<", "kkkkkkkkkkkkkk",
 ]
-T["block/car_glass_corporate"] = (["1111111111111111", "3555555555555553"]
-                                  + ["4" + row + "4" for row in SMOKED]
+T["block/car_glass_corporate"] = (["1111111111111111", "3666666666666663"]
+                                  + ["5" + row + "3" for row in SMOKED]
                                   + ["3555555555555553", "1111111111111111"]
                                   + ["2222222222222222"] * 10)
 
-# Black granite tiles with pale flecks.
+# Black granite tile, lit along its top and left edges, with pale flecks and a grout line.
 T["block/car_floor_corporate"] = [
-    "KKlKKKKLKKKKlKK2",
-    "KKKKKlKKKK5KKKK2",
-    "lKKKKKKKlKKKKLK2",
-    "KK7KKKKKKKKlKKK2",
-    "KKKKlKKKK7KKKKK2",
-    "KLKKKKKlKKKKKlK2",
-    "KKKKKKKKKKLKKKK2",
-    "KlKK5KKKKKKKKKl2",
-    "KKKKKKlKKKKK7KK2",
-    "KKLKKKKKKlKKKKK2",
-    "KKKKKKKK5KKKKLK2",
-    "lKKKlKKKKKKKKKK2",
-    "KKKKKKKLKKKlKKK2",
-    "KK5KKlKKKKKKKKl2",
-    "KKKKKKKKKK7KKKK2",
+    "lllllllllllllll2",
+    "lKKKKKlKKKKKKKK2",
+    "lKK7KKKKKKLKKKK2",
+    "lKKlKKKKKKKKK5K2",
+    "lKKKKKKLKKKKKKK2",
+    "lKKKKKKKKKKlKKK2",
+    "lK5KKKlKKKKKKKK2",
+    "lKKKKKKKKK7lKKK2",
+    "lKKKKLKKKKKKKKK2",
+    "lKKKKKKKKKKKKLK2",
+    "lKlKKKKK5KKKKKK2",
+    "lKKKKKKKlKKKKKK2",
+    "lKKKK7KKKKKKlKK2",
+    "lKKKKKKKKKLKKKK2",
+    "lKKKKKKKKKKKKKK2",
     "2222222222222222",
 ]
 
-# White ceiling with a round downlight.
-CEIL = "7888888888888886"
+# White ceiling panel with a round cool-white downlight and a slot diffuser.
+CEIL = "9888888888888886"
 T["block/car_ceiling_corporate"] = [
-    "7777777777777777",
+    "9999999999999997",
     CEIL, CEIL, CEIL,
-    "7888888668888886",
-    "7888886996888886",
-    "7888869999688886",
-    "7888869999688886",
-    "7888886996888886",
-    "7888888668888886",
-    CEIL, CEIL, CEIL, CEIL, CEIL,
-    "6666666666666665",
+    "9888886776888886",
+    "9888867JJ7688886",
+    "988886J99J688886",
+    "988886J99J688886",
+    "9888867JJ7688886",
+    "9888886776888886",
+    CEIL, CEIL,
+    "9887333333337886",
+    CEIL, CEIL,
+    "7666666666666666",
 ]
 
 # Rows 0-2: steel sill and handrail. Rows 4-6: steel fascia.
@@ -322,10 +338,14 @@ T["block/car_trim_corporate"] = [
     "1111111111111111",
 ] + ["4444444444444444"] * 8
 
-# Stainless leaf, lighter towards the top.
-T["block/car_door_corporate"] = (["3555555555555555"] + ["3878777877787778"] * 10
-                                 + ["3777677767776777"] * 11 + ["3676667666766676"] * 9
-                                 + ["3333333333333333"])
+# Stainless leaf: three faint brushing lines down it, shading from bright at the top to grey at the
+# bottom, with the shades interleaved for a row or two where they change.
+DOOR_BRIGHT = "3888878887888786"
+DOOR_MID = "3877767776777676"
+DOOR_GREY = "3866656665666565"
+T["block/car_door_corporate"] = (["3555555555555555"] + [DOOR_BRIGHT] * 5 + [DOOR_MID, DOOR_BRIGHT]
+                                 + [DOOR_MID] * 10 + [DOOR_GREY, DOOR_MID, DOOR_GREY]
+                                 + [DOOR_GREY] * 10 + ["3333333333333333"])
 
 # Black glass: blue floor readout and steel buttons, one lit.
 T["block/car_panel_corporate"] = car_panel([
