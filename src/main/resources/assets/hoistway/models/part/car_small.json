@@ -1,6 +1,7 @@
 {
   "ambientocclusion": false,
   "textures": {
+    "display": "hoistway:block/car_display",
     "floor": "hoistway:block/car_floor",
     "frame": "hoistway:block/car_frame",
     "trim": "hoistway:block/car_trim",
@@ -810,6 +811,65 @@
             13,
             12,
             14
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        20,
+        0
+      ],
+      "to": [
+        13,
+        25,
+        0.5
+      ],
+      "faces": {
+        "south": {
+          "texture": "#display",
+          "uv": [
+            3,
+            5,
+            13,
+            10
+          ]
+        },
+        "west": {
+          "texture": "#display",
+          "uv": [
+            3,
+            5,
+            4,
+            10
+          ]
+        },
+        "east": {
+          "texture": "#display",
+          "uv": [
+            3,
+            5,
+            4,
+            10
+          ]
+        },
+        "up": {
+          "texture": "#display",
+          "uv": [
+            3,
+            5,
+            13,
+            6
+          ]
+        },
+        "down": {
+          "texture": "#display",
+          "uv": [
+            3,
+            9,
+            13,
+            10
           ]
         }
       }

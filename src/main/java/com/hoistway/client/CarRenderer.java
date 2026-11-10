@@ -10,6 +10,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -82,6 +84,7 @@ public class CarRenderer extends EntityRenderer<ElevatorCarEntity> {
         // The model is authored one block low so that all 2.75 blocks of it fit a model file.
         pose.translate(-0.5F, 1.0F, -0.5F);
         draw(minecraft, cabin(style, large), pose, buffers, light);
+        drawFloorDisplay(minecraft, car, style, pose, buffers);
 
         if (style.hasDoors()) {
             // Ease in and out, so the leaves start and stop gently instead of at full speed.
@@ -120,6 +123,47 @@ public class CarRenderer extends EntityRenderer<ElevatorCarEntity> {
         pose.scale(scale, 1.0F, 1.0F);
         pose.translate(-0.5F, 0.0F, 0.0F);
         draw(minecraft, model, pose, buffers, light);
+        pose.popPose();
+    }
+
+    /**
+     * Writes the floor, with an arrow for the way the car is going, on the display's screen. The
+     * fitted cabins have the display over the doors, facing in; the cage has it hung under the
+     * roof on its north side. Lit like a lamp, so it reads in the dark.
+     */
+    private static void drawFloorDisplay(Minecraft minecraft, ElevatorCarEntity car, CabinStyle style,
+            PoseStack pose, MultiBufferSource buffers) {
+        int floor = car.getDisplayFloor();
+        int heading = car.getHeading();
+        String text = (heading > 0 ? "▲" : heading < 0 ? "▼" : "") + (floor > 0 ? Integer.toString(floor) : "-");
+        int colour = switch (style) {
+            case RETRO -> 0xFF5A28;       // red-orange segments
+            case CORPORATE -> 0x9FDCFF;   // cool white-blue
+            case STANDARD -> 0xFFB43A;    // amber
+        };
+
+        // Screen centre in model pixels; the model is drawn one block up and half a block across.
+        boolean cabin = style.hasDoors();
+        int high = car.getSize() >= 3 ? 32 : 16;
+        int low = car.getSize() >= 3 ? -16 : 0;
+        float x = 8.0F;
+        float y = cabin ? 22.0F : 22.5F;
+        float z = cabin ? high - 3.55F : low + 0.55F;
+
+        Font font = minecraft.font;
+        float width = font.width(text);
+        // About 2.6 pixels tall, narrowed to fit the 8 pixel screen when the number is long.
+        float scale = Math.min(2.6F / 16.0F / 7.0F, 7.4F / 16.0F / width);
+
+        pose.pushPose();
+        pose.translate(x / 16.0F, y / 16.0F, z / 16.0F);
+        if (cabin) {
+            // Seen from inside looking towards the doors (south): face north, like the back of a sign.
+            pose.mulPose(Axis.YP.rotationDegrees(180.0F));
+        }
+        pose.scale(scale, -scale, -scale);
+        font.drawInBatch(text, -width / 2.0F, -3.5F, 0xFF000000 | colour, false, pose.last().pose(), buffers,
+                Font.DisplayMode.POLYGON_OFFSET, 0, LightTexture.FULL_BRIGHT);
         pose.popPose();
     }
 

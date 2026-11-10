@@ -654,6 +654,20 @@ T["item/corporate_cabin_kit"] = cabin_kit([
     "555555555555",
 ])
 
+# The floor display's bezel and dark screen (columns 3-12, rows 5-9). The renderer draws the
+# floor number on the screen.
+def car_display(top, side, shade, bottom, screen="kkkkkkkk"):
+    return (["." * 16] * 5
+            + ["..." + top + "..."]
+            + ["..." + side + screen + shade + "..."] * 3
+            + ["..." + bottom + "..."]
+            + ["." * 16] * 6)
+
+
+T["block/car_display"] = car_display("7777777776", "7", "4", "6444444443")
+T["block/car_display_retro"] = car_display("EDDDDDDDDB", "D", "B", "BBBBBBBBBA")
+T["block/car_display_corporate"] = car_display("LLLLLLLLLK", "L", "K", "KKKKKKKKKk")
+
 # Shown in an empty disc slot of the motor, like the smithing table's empty slot outlines.
 T["item/empty_slot_music_disc"] = [
     "................",

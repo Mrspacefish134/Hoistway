@@ -64,6 +64,11 @@ public class ElevatorCarEntity extends Entity {
             SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.DIRECTION);
     private static final EntityDataAccessor<Boolean> DATA_DOORS_OPEN =
             SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.BOOLEAN);
+    /** What the floor display shows: the floor number (0 for none) and the travel direction. */
+    private static final EntityDataAccessor<Integer> DATA_FLOOR =
+            SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_HEADING =
+            SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.INT);
     /** Synced so the client can find the motor's music discs. */
     private static final EntityDataAccessor<Optional<BlockPos>> DATA_MOTOR =
             SynchedEntityData.defineId(ElevatorCarEntity.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
@@ -104,6 +109,18 @@ public class ElevatorCarEntity extends Entity {
         builder.define(DATA_DOOR_SIDE, Direction.SOUTH);
         builder.define(DATA_DOORS_OPEN, true);
         builder.define(DATA_MOTOR, Optional.empty());
+        builder.define(DATA_FLOOR, 0);
+        builder.define(DATA_HEADING, 0);
+    }
+
+    /** The floor number on the display, or 0 before the car knows it. */
+    public int getDisplayFloor() {
+        return this.entityData.get(DATA_FLOOR);
+    }
+
+    /** 1 going up, -1 going down, 0 with nowhere to go. */
+    public int getHeading() {
+        return this.entityData.get(DATA_HEADING);
     }
 
     public CabinStyle getStyle() {
@@ -398,7 +415,17 @@ public class ElevatorCarEntity extends Entity {
                 this.retarget(motor, oldY);
                 newY = this.advance(motor, oldY);
                 this.announcePassing(motor, newY);
+            } else {
+                // Parked: show the floor it is on, which also catches floors being renumbered.
+                int here = (int) Math.round(newY);
+                if (Math.abs(here - newY) < 0.01) {
+                    int number = motor.floorNumber(here);
+                    if (number > 0) {
+                        this.entityData.set(DATA_FLOOR, number);
+                    }
+                }
             }
+            this.entityData.set(DATA_HEADING, this.direction);
         }
 
         if (newY != oldY) {
@@ -466,7 +493,7 @@ public class ElevatorCarEntity extends Entity {
         }
     }
 
-    /** Tells the riders which floor they are passing. */
+    /** Steps the floor display on to each floor the car passes. */
     private void announcePassing(MotorBlockEntity motor, double y) {
         int nearest = (int) Math.round(y);
         if (Math.abs(nearest - y) > 0.5 || nearest == this.announcedFloor || Double.isNaN(this.targetY)) {
@@ -475,13 +502,7 @@ public class ElevatorCarEntity extends Entity {
         int number = motor.floorNumber(nearest);
         if (number > 0) {
             this.announcedFloor = nearest;
-            this.tellRiders(Component.translatable(this.direction > 0 ? "hoistway.car.passing_up" : "hoistway.car.passing_down", number));
-        }
-    }
-
-    private void tellRiders(Component message) {
-        for (Player player : this.level().getEntitiesOfClass(Player.class, this.cabinBox().inflate(0.3, 0.5, 0.3))) {
-            player.displayClientMessage(message, true);
+            this.entityData.set(DATA_FLOOR, number);
         }
     }
 
@@ -505,7 +526,7 @@ public class ElevatorCarEntity extends Entity {
         motor.clearRequest(floor);
         int number = motor.floorNumber(floor);
         if (number > 0) {
-            this.tellRiders(Component.translatable("hoistway.car.floor", number));
+            this.entityData.set(DATA_FLOOR, number);
         }
         if (doors && travelled && !this.areDoorsOpen()) {
             // Just pulled in: let the car come to rest on screen before the doors start to open.

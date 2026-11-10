@@ -269,6 +269,14 @@ def escalator_models():
 
 # ------------------------------------------------------------------ elevator car
 
+def display_panel(start, end, front):
+    """The floor display: a 10x5 pixel bezel and screen, art at columns 3-12, rows 5-9."""
+    edge = face("#display", [3, 5, 4, 10])
+    faces = {front: face("#display", [3, 5, 13, 10]), "west": edge, "east": edge,
+             "up": face("#display", [3, 5, 13, 6]), "down": face("#display", [3, 9, 13, 10])}
+    return element(start, end, faces)
+
+
 def car_model(size):
     """The cage. Authored 16 pixels low so its 46 pixel height fits the -16..32 model range."""
     low, high = (0, 16) if size == 1 else (-16, 32)
@@ -296,11 +304,14 @@ def car_model(size):
         "west": panel_edge, "east": panel_edge,
         "up": face("#panel", [4, 2, 12, 3]), "down": face("#panel", [4, 13, 12, 14]),
     }))
+    # Floor display hung under the roof on the north side, facing in.
+    parts.append(display_panel([3, 20, low], [13, 25, low + 0.5], "south"))
     # Crosshead: where the hoist cables are made fast.
     crosshead = {side: face("#frame", [0, 0, 6, 2]) for side in SIDES}
     crosshead["up"] = face("#frame", [0, 0, 6, 6])
     parts.append(element([5, 28, 5], [11, 30, 11], crosshead))
     return model({
+        "display": "hoistway:block/car_display",
         "floor": "hoistway:block/car_floor",
         "frame": "hoistway:block/car_frame",
         "trim": "hoistway:block/car_trim",
@@ -366,15 +377,24 @@ def cabin_model(size, style):
     wall("x", low, low + 1, high - 1, "north", "south", "#back")      # back wall
     wall("z", low, low, high - 1, "west", "east")                      # side walls
     wall("z", high - 1, low, high - 1, "east", "west")
-    wall("x", high - 1, low, door_lo, "south", "north")                # front, beside the doorway
+    # The front is two skins with a one pixel slot between them (z high-2 to high-1) that the door
+    # leaves slide into, so an open leaf is hidden from inside the cabin and from the landing.
+    wall("x", high - 1, low, door_lo, "south", "north")                # outer skin, beside the doorway
     wall("x", high - 1, door_hi, high, "south", "north")
     wall("x", high - 1, door_lo, door_hi, "south", "north", y1=DOOR_TOP, v2=HEADER_V)   # over it
-    # The reveal round the doorway.
+    wall("x", high - 3, low + 1, door_lo, "south", "north")            # inner skin
+    wall("x", high - 3, door_hi, high - 1, "south", "north")
+    wall("x", high - 3, door_lo, door_hi, "south", "north", y1=DOOR_TOP, v2=HEADER_V)
+    # The reveal round the doorway: on both skins, leaving the slot open so the edge of an open
+    # leaf shows in it the way a real door's does.
     reveal = face("#trim", [0, 0, 1, 3])
-    parts.append(element([door_lo - 0.01, CABIN_FLOOR, high - 1], [door_lo, DOOR_TOP, high], {"east": reveal}))
-    parts.append(element([door_hi, CABIN_FLOOR, high - 1], [door_hi + 0.01, DOOR_TOP, high], {"west": reveal}))
-    parts.append(element([door_lo, DOOR_TOP, high - 1], [door_hi, DOOR_TOP + 0.01, high],
+    for z1, z2 in ((high - 3, high - 2), (high - 1, high)):
+        parts.append(element([door_lo - 0.01, CABIN_FLOOR, z1], [door_lo, DOOR_TOP, z2], {"east": reveal}))
+        parts.append(element([door_hi, CABIN_FLOOR, z1], [door_hi + 0.01, DOOR_TOP, z2], {"west": reveal}))
+    parts.append(element([door_lo, DOOR_TOP, high - 3], [door_hi, DOOR_TOP + 0.01, high],
                          {"down": face("#trim", [0, 0, 16, 1])}))
+    # Floor display over the doors, facing in. The renderer writes the floor on its screen.
+    parts.append(display_panel([3, 19.5, high - 3.5], [13, 24.5, high - 3], "north"))
 
     # Handrail along the back wall.
     rail = {side: face("#trim", [0, 0, 16, 1]) for side in ("south", "up", "down")}
@@ -403,6 +423,7 @@ def cabin_model(size, style):
         "trim": f"hoistway:block/car_trim_{style}",
         "ceiling": f"hoistway:block/car_ceiling_{style}",
         "panel": f"hoistway:block/car_panel_{style}",
+        "display": f"hoistway:block/car_display_{style}",
         "roof": "hoistway:block/car_roof",
         "frame": "hoistway:block/car_frame",
         "particle": f"hoistway:block/car_wall_{style}",
@@ -464,10 +485,7 @@ def lang():
         "item.hoistway.retro_cabin_kit": "Retro Cabin Kit",
         "item.hoistway.corporate_cabin_kit": "Corporate Cabin Kit",
         "hoistway.subtitle.car_chime": "Elevator chimes",
-        "hoistway.car.floor": "Floor %s",
         "hoistway.panel.title": "Elevator",
-        "hoistway.car.passing_up": "▲ %s",
-        "hoistway.car.passing_down": "▼ %s",
         "item.hoistway.elevator_car": "Elevator Car",
         "item.hoistway.large_elevator_car": "Large Elevator Car",
         "entity.hoistway.elevator_car": "Elevator Car",

@@ -30,8 +30,9 @@ panel, picking up a passenger on the way, and escalators.
 | Sneak while standing in the car | Go down one stop. |
 | Punch the car while it is parked | Picks it back up. |
 
-Floors are numbered from the lowest stop, which is floor 1. The car announces each floor it
-passes and the floor it stops at.
+Floors are numbered from the lowest stop, which is floor 1. A display in the car shows the floor
+it is at or passing, with an arrow for the way it is going: over the doors in a fitted cabin,
+under the roof in the plain cage.
 
 The car works like a real collective elevator: it keeps travelling in one direction, stopping
 at every floor someone asked for on the way, then turns round. If someone presses a Call Button
