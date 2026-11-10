@@ -1,0 +1,78 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "panel": "hoistway:block/call_button_lit",
+    "particle": "hoistway:block/call_button_lit"
+  },
+  "elements": [
+    {
+      "from": [
+        4,
+        2,
+        15
+      ],
+      "to": [
+        12,
+        14,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#panel",
+          "uv": [
+            4,
+            2,
+            12,
+            14
+          ]
+        },
+        "south": {
+          "texture": "#panel",
+          "uv": [
+            4,
+            2,
+            12,
+            14
+          ]
+        },
+        "west": {
+          "texture": "#panel",
+          "uv": [
+            4,
+            2,
+            5,
+            14
+          ]
+        },
+        "east": {
+          "texture": "#panel",
+          "uv": [
+            11,
+            2,
+            12,
+            14
+          ]
+        },
+        "up": {
+          "texture": "#panel",
+          "uv": [
+            4,
+            2,
+            12,
+            3
+          ]
+        },
+        "down": {
+          "texture": "#panel",
+          "uv": [
+            4,
+            13,
+            12,
+            14
+          ]
+        }
+      }
+    }
+  ]
+}

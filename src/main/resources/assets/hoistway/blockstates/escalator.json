@@ -1,0 +1,78 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "top": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_comb"
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "top": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_comb",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "top": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_comb",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "top": "true"
+      },
+      "apply": {
+        "model": "hoistway:block/escalator_comb",
+        "y": 270
+      }
+    }
+  ]
+}

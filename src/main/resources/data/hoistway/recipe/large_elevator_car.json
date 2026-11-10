@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IPI",
+    "PEP",
+    "IPI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "P": {
+      "item": "minecraft:heavy_weighted_pressure_plate"
+    },
+    "E": {
+      "item": "hoistway:elevator_car"
+    }
+  },
+  "result": {
+    "id": "hoistway:large_elevator_car",
+    "count": 1
+  }
+}

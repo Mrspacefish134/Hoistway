@@ -1,0 +1,80 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "panel": "hoistway:block/escalator_panel",
+    "skirt": "hoistway:block/escalator_skirt",
+    "handrail": "hoistway:block/escalator_handrail",
+    "step": "hoistway:block/escalator_step",
+    "particle": "hoistway:block/escalator_skirt"
+  },
+  "elements": [
+    {
+      "from": [
+        1,
+        0,
+        8
+      ],
+      "to": [
+        15,
+        8,
+        16
+      ],
+      "faces": {
+        "up": {
+          "texture": "#step",
+          "uv": [
+            1,
+            0,
+            15,
+            8
+          ]
+        },
+        "down": {
+          "texture": "#step",
+          "uv": [
+            1,
+            8,
+            15,
+            16
+          ]
+        },
+        "north": {
+          "texture": "#step",
+          "uv": [
+            1,
+            8,
+            15,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#step",
+          "uv": [
+            1,
+            8,
+            15,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#step",
+          "uv": [
+            0,
+            8,
+            8,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#step",
+          "uv": [
+            0,
+            8,
+            8,
+            16
+          ]
+        }
+      }
+    }
+  ]
+}

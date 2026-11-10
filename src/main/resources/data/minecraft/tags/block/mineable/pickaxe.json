@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "hoistway:elevator_motor",
+    "hoistway:call_button",
+    "hoistway:escalator"
+  ]
+}

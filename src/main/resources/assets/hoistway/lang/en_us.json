@@ -1,0 +1,20 @@
+{
+  "itemGroup.hoistway": "Hoistway",
+  "block.hoistway.elevator_motor": "Elevator Motor",
+  "block.hoistway.call_button": "Call Button",
+  "block.hoistway.escalator": "Escalator",
+  "item.hoistway.cable": "Hoist Cable",
+  "item.hoistway.speed_upgrade": "Speed Upgrade",
+  "item.hoistway.stop_upgrade": "Stop Upgrade",
+  "item.hoistway.elevator_car": "Elevator Car",
+  "item.hoistway.large_elevator_car": "Large Elevator Car",
+  "entity.hoistway.elevator_car": "Elevator Car",
+  "hoistway.call.no_motor": "No elevator motor above this button",
+  "hoistway.call.too_high": "This floor is too close to the motor",
+  "hoistway.call.no_cable": "Not enough cable to reach this floor",
+  "hoistway.call.too_many_stops": "The motor needs a Stop Upgrade to serve this floor",
+  "hoistway.car.no_motor": "There is no elevator motor above",
+  "hoistway.car.occupied": "That motor already has a car",
+  "hoistway.car.no_room": "Not enough room for the car",
+  "hoistway.car.no_cable": "The motor needs more cable to reach this car"
+}

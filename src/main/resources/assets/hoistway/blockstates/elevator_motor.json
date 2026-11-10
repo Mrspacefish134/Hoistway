@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "hoistway:block/elevator_motor"
+    },
+    "facing=east": {
+      "model": "hoistway:block/elevator_motor",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "hoistway:block/elevator_motor",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "hoistway:block/elevator_motor",
+      "y": 270
+    }
+  }
+}
